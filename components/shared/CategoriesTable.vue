@@ -1,15 +1,15 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
-const customerData = useCustomerStore();
+const categoryStore = useCategoryStore();
 
 onMounted(() => {
-  customerData.fetchCustomers();
+  categoryStore.fetchCategories();
 });
 
 const confirmDelete = async (value) => {
-  if (confirm("Are you sure you want to delete this customer?")) {
-    const res = await customerData.deleteCustomer(value);
+  if (confirm("Are you sure you want to delete this category?")) {
+    const res = await categoryStore.deleteCategory(value);
 
     if (res.errors) {
       let errorMsg = Object.values(res.errors)[0][0];
@@ -19,16 +19,15 @@ const confirmDelete = async (value) => {
         type: "error",
       });
     } else {
-      useToastify("Customer deleted successfully!", {
+      useToastify("Category deleted successfully!", {
         autoClose: 3000,
         position: ToastifyOption.POSITION.TOP_RIGHT,
         type: "success",
       });
-      await customerData.fetchCustomers();
+      await categoryStore.fetchCategories();
     }
   }
 };
-
 </script>
 
 <template>
@@ -41,22 +40,12 @@ const confirmDelete = async (value) => {
           <th
             scope="col"
             class="px-6 py-3">
-            Customer ID
+            Category ID
           </th>
           <th
             scope="col"
             class="px-6 py-3">
-            Customer Name
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3">
-            Email
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3">
-            Phone
+            Category Name
           </th>
           <th
             scope="col"
@@ -65,26 +54,18 @@ const confirmDelete = async (value) => {
           </th>
         </tr>
       </thead>
-      <tbody v-if="customerData.customers">
+      <tbody v-if="categoryStore.categories">
         <tr
-          v-for="customer in customerData.customers"
-          :key="customer.id"
+          v-for="category in categoryStore.categories"
+          :key="category.id"
           class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.id }}
+            {{ category.id }}
           </td>
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.name }}
-          </td>
-          <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.email }}
-          </td>
-          <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.phone }}
+            {{ category.name }}
           </td>
           <td class="px-6 py-4 flex items-center gap-2">
             <a
@@ -104,7 +85,7 @@ const confirmDelete = async (value) => {
               </svg>
             </a>
             <button
-              @click="confirmDelete(customer.id)"
+              @click="confirmDelete(category.id)"
               class="font-medium text-red-600 dark:text-red-500 hover:underline">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

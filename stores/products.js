@@ -2,26 +2,26 @@ import { defineStore } from "pinia";
 
 const baseURL = "http://127.0.0.1:8000/api";
 
-export const useCustomerStore = defineStore("customer", () => {
-  const customers = ref([]);
+export const useProductStore = defineStore("product", () => {
+  const products = ref([]);
 
-  const fetchCustomers = async () => {
+  const fetchProducts = async () => {
     console.log("reached api call");
     try {
-      const response = await $fetch(baseURL + "/customers");
+      const response = await $fetch(baseURL + "/products");
       console.log(response);
 
-      customers.value = response;
+      products.value = response;
     } catch (err) {
       console.error("Unexpected error:", err);
     }
   };
 
-  const addCustomer = async(customerData) => {
+  const addProduct = async (productData) => {
     try {
-      const response = await $fetch(baseURL + "/customers", {
+      const response = await $fetch(baseURL + "/products", {
         method: "POST",
-        body: customerData,
+        body: productData,
       });
 
       return response;
@@ -29,11 +29,11 @@ export const useCustomerStore = defineStore("customer", () => {
       console.error("Unexpected error:", err.response);
       return err.response._data;
     }
-  }
+  };
 
-  const deleteCustomer = async (customerId) => {
+  const deleteProduct = async (categoryId) => {
     try {
-      const response = await $fetch(baseURL + "/customers/" + customerId, {
+      const response = await $fetch(baseURL + "/products/" + categoryId, {
         method: "DELETE",
       });
 
@@ -45,10 +45,10 @@ export const useCustomerStore = defineStore("customer", () => {
   };
 
   return {
-    customers,
-    fetchCustomers,
-    addCustomer,
+    products,
+    fetchProducts,
+    addProduct,
     // updateCustomer,
-    deleteCustomer,
+    deleteProduct,
   };
 });

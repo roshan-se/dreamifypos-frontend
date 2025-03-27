@@ -1,8 +1,16 @@
 <script setup>
 const activeDrop = ref(false);
+const openModal = ref(false);
 
 const toggleDropdown = () => {
   activeDrop.value = !activeDrop.value;
+};
+
+
+
+const toggleModal = () => {
+  console.log("I am clicked");
+  openModal.value = !openModal.value;
 };
 </script>
 
@@ -76,7 +84,7 @@ const toggleDropdown = () => {
                 </li>
                 <li>
                   <a
-                    href="#"
+                    @click="toggleModal"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
                     role="menuitem">
                     Clock In / Clock Out
@@ -104,5 +112,7 @@ const toggleDropdown = () => {
         </div>
       </div>
     </div>
+
+    <ClockInOut :openModal="openModal" @close="openModal = false" />
   </nav>
 </template>

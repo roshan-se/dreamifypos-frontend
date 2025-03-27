@@ -1,15 +1,18 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
-const customerData = useCustomerStore();
+defineProps({
+  products: Array
+})
+// const productStore = useProductStore();
 
-onMounted(() => {
-  customerData.fetchCustomers();
-});
+// onMounted(() => {
+//   productStore.fetchProducts();
+// });
 
 const confirmDelete = async (value) => {
-  if (confirm("Are you sure you want to delete this customer?")) {
-    const res = await customerData.deleteCustomer(value);
+  if (confirm("Are you sure you want to delete this product?")) {
+    const res = await productStore.deleteProduct(value);
 
     if (res.errors) {
       let errorMsg = Object.values(res.errors)[0][0];
@@ -19,16 +22,15 @@ const confirmDelete = async (value) => {
         type: "error",
       });
     } else {
-      useToastify("Customer deleted successfully!", {
+      useToastify("Product deleted successfully!", {
         autoClose: 3000,
         position: ToastifyOption.POSITION.TOP_RIGHT,
         type: "success",
       });
-      await customerData.fetchCustomers();
+      await productStore.fetchProducts();
     }
   }
 };
-
 </script>
 
 <template>
@@ -41,22 +43,32 @@ const confirmDelete = async (value) => {
           <th
             scope="col"
             class="px-6 py-3">
-            Customer ID
+            Id
           </th>
           <th
             scope="col"
             class="px-6 py-3">
-            Customer Name
+            Product Name
+          </th>
+          <th
+            scope="col"
+            class="px-6 py-3 text-center">
+            Cost Price
+          </th>
+          <th
+            scope="col"
+            class="px-6 py-3 text-center">
+            Selling Price
           </th>
           <th
             scope="col"
             class="px-6 py-3">
-            Email
+            SKU
           </th>
           <th
             scope="col"
             class="px-6 py-3">
-            Phone
+            Stock
           </th>
           <th
             scope="col"
@@ -65,26 +77,30 @@ const confirmDelete = async (value) => {
           </th>
         </tr>
       </thead>
-      <tbody v-if="customerData.customers">
+      <tbody>
         <tr
-          v-for="customer in customerData.customers"
-          :key="customer.id"
+          v-for="product in products"
+          :key="product.id"
           class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+          <td class="px-6 py-4">{{ product.id }}</td>
           <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.id }}
+            class="px-6 py-4 font-medium capitalize text-gray-900 whitespace-nowrap dark:text-white">
+            {{ product.name }}
           </td>
-          <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.name }}
+
+          <td class="px-6 py-4 text-blue-600 text-center">
+            ${{ product.purchase_price }}
           </td>
-          <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.email }}
+          <td class="px-6 py-4 text-green-600 text-center">
+            ${{ product.selling_price }}
           </td>
+          <td class="px-6 py-4">{{ product.sku }}</td>
           <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.phone }}
+            class="px-6 py-4"
+            :class="[
+              product.stock_quantity > 10 ? 'text-green-600' : 'text-red-600',
+            ]">
+            {{ product.stock_quantity }}
           </td>
           <td class="px-6 py-4 flex items-center gap-2">
             <a
@@ -104,7 +120,7 @@ const confirmDelete = async (value) => {
               </svg>
             </a>
             <button
-              @click="confirmDelete(customer.id)"
+              @click="confirmDelete(product.id)"
               class="font-medium text-red-600 dark:text-red-500 hover:underline">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

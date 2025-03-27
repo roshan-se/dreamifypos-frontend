@@ -6,7 +6,42 @@ definePageMeta({
   layout: "default",
 });
 
-const openModal = ref(false)
+const customerStore =  useCustomerStore();
+
+const openModal = ref(false);
+const customerFormData = reactive({
+  name: "",
+  phone: "",
+  email: ""
+});
+
+const toggleModal = () => {
+  openModal.value = !openModal.value;
+};
+
+const handleCreateCustomer = async () => {
+    const res = await customerStore.addCustomer(customerFormData);
+
+    if (res.errors) {
+    console.log("Check", res.message);
+    console.log("Checking response in form", Object.values(res.errors)[0][0]);
+    errors.value = Object.values(res.errors)[0][0];
+  } else {
+    openModal.value = false;
+    customerFormData.name = "";
+    customerFormData.email = "";
+    customerFormData.phone = "";
+    useToastify("Customer added successfully!", {
+      autoClose: 3000,
+      position: ToastifyOption.POSITION.TOP_RIGHT,
+      type: "success",
+    });
+    customerStore.fetchCustomers()
+  }
+}
+
+
+
 </script>
 
 
@@ -17,8 +52,8 @@ const openModal = ref(false)
                 <h1 class="text-xl font-semibold uppercase">Customers</h1>
 
                 <button
-                    @click="() => !openModal"
-                    class="px-8 py-2 rounded-md bg-blue-600 text-white"
+                    @click="toggleModal"
+                    class="primary-btn"
                 >
                     Add Customer
                 </button>
@@ -53,29 +88,103 @@ const openModal = ref(false)
                         required
                     />
                 </div>
-                <button
-                    type="submit"
-                    class="p-2.5 ms-2 text-sm font-medium text-white bg-blue-700 rounded-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 20 20"
-                    >
-                        <path
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                        />
-                    </svg>
-                    <span class="sr-only">Search</span>
-                </button>
+                
             </form>
 
             <CustomersTable />
+
+            <!-- Modal to Create Customer  -->
+            <div
+        v-if="openModal"
+        class="overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center content-center w-full md:inset-0 h-full max-h-full bg-black/70">
+        <div class="relative p-4 w-full max-w-2xl m-auto">
+          <!-- Modal content -->
+          <div class="relative bg-white rounded-lg shadow-sm dark:bg-gray-700">
+            <!-- Modal header -->
+            <div
+              class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                Add New Customer
+              </h3>
+              <button
+                @click="toggleModal"
+                type="button"
+                class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                <svg
+                  class="w-3 h-3"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 14 14">
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                </svg>
+                <span class="sr-only">Close modal</span>
+              </button>
+            </div>
+            <!-- Modal body -->
+            <div class="p-4 md:p-5">
+              <div
+                v-if="errors"
+                class="italic text-sm text-red-600 mb-2">
+                {{ errors }}
+              </div>
+              <form
+                class="space-y-4"
+                @submit.prevent="handleCreateCustomer">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="col-span-2">
+                    <label
+                      for=""
+                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >Customer Name</label
+                    >
+                    <input
+                      type="text"
+                      v-model="customerFormData.name"
+                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="" />
+                  </div>
+                  <div>
+                    <label
+                      for=""
+                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >Phone Number</label
+                    >
+                    <input
+                      type="text"
+                      v-model="customerFormData.phone"
+                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="" />
+                  </div>
+                  <div>
+                    <label
+                      for=""
+                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >Email</label
+                    >
+                    <input
+                      type="text"
+                      v-model="customerFormData.email"
+                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="" />
+                  </div>
+                 
+                </div>
+
+                <button
+                  type="submit"
+                  class="primary-btn w-full">
+                  Create
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 </template>

@@ -1,15 +1,15 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
-const customerData = useCustomerStore();
+const employeeData = useEmployeeStore();
 
 onMounted(() => {
-  customerData.fetchCustomers();
+  employeeData.fetchEmployees();
 });
 
 const confirmDelete = async (value) => {
-  if (confirm("Are you sure you want to delete this customer?")) {
-    const res = await customerData.deleteCustomer(value);
+  if (confirm("Are you sure you want to delete this employee?")) {
+    const res = await employeeData.deleteEmployee(value);
 
     if (res.errors) {
       let errorMsg = Object.values(res.errors)[0][0];
@@ -19,12 +19,12 @@ const confirmDelete = async (value) => {
         type: "error",
       });
     } else {
-      useToastify("Customer deleted successfully!", {
+      useToastify("Employee deleted successfully!", {
         autoClose: 3000,
         position: ToastifyOption.POSITION.TOP_RIGHT,
         type: "success",
       });
-      await customerData.fetchCustomers();
+      await employeeData.fetchEmloyees();
     }
   }
 };
@@ -41,12 +41,17 @@ const confirmDelete = async (value) => {
           <th
             scope="col"
             class="px-6 py-3">
-            Customer ID
+            Employee ID
           </th>
           <th
             scope="col"
             class="px-6 py-3">
-            Customer Name
+            Employee Name
+          </th>
+          <th
+            scope="col"
+            class="px-6 py-3">
+            Role
           </th>
           <th
             scope="col"
@@ -65,26 +70,32 @@ const confirmDelete = async (value) => {
           </th>
         </tr>
       </thead>
-      <tbody v-if="customerData.customers">
+      <tbody v-if="employeeData.employees">
         <tr
-          v-for="customer in customerData.customers"
-          :key="customer.id"
+          v-for="employee in employeeData.employees"
+          :key="employee.id"
           class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.id }}
+            {{ employee.id }}
           </td>
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.name }}
+            {{ employee.name }}
+          </td>
+          <td
+            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">
+            <div class="rounded-full bg-gradient-to-r  px-2 py-1 text-center text-xs font-medium text-white capitalize w-20":class="[
+              employee.role == 'admin' ? 'from-rose-500 via-red-400 to-red-500' : 'from-blue-500 via-sky-400 to-sky-500',
+            ]">{{ employee.role }}</div>
           </td>
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.email }}
+            {{ employee.email }}
           </td>
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ customer.phone }}
+            {{ employee.phone }}
           </td>
           <td class="px-6 py-4 flex items-center gap-2">
             <a
@@ -104,7 +115,7 @@ const confirmDelete = async (value) => {
               </svg>
             </a>
             <button
-              @click="confirmDelete(customer.id)"
+              @click="confirmDelete(employee.id)"
               class="font-medium text-red-600 dark:text-red-500 hover:underline">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

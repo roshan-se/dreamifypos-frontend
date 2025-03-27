@@ -1,64 +1,16 @@
 <script setup>
-import SuppliersTable from "~/components/shared/SuppliersTable.vue";
-
-const openModal = ref(false);
-const salesStore = useSalesStore();
-const errors = ref("");
-const startDate = ref("");
-const endDate = ref("");
-const maxDate = new Date().toISOString().split('T')[0];
-
-onMounted(() => {
-    const today = new Date().toISOString().split('T')[0];
-    console.log(today)
-    startDate.value = today;
-    endDate.value = today
-    salesStore.fetchSales(today, today);
-
-});
-
-const getSales = () => {
-    salesStore.fetchSales(startDate.value, endDate.value)
-}
+defineProps({
+    recentSales: Object
+})
 
 </script>
 
 <template>
-  <div>
-    <div
-      class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
-      <div class="flex justify-between items-center mb-2">
-        <h1 class="text-xl font-semibold uppercase">Sales Report</h1>
-
-       
-      </div>
-      <form @submit.prevent="getSales()" class="flex items-end w-full gap-4 mb-8">
-        <div class="flex items-end gap-4">
-          <div class="relative w-full">
-            <label for="" class="text-sm">Start Date</label>
-            <input
-              type="date"
-              id="simple-search"
-              :max="maxDate"
-              v-model="startDate"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Search suppliers name..." />
-          </div>
-          <div class="relative w-full">
-            <label for="" class="text-sm">End Date</label>
-            <input
-              type="date"
-              v-model="endDate"
-              :max="maxDate"
-              id="simple-search"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Search suppliers name..." />
-          </div>
+    <div v-if="recentSales">
+        <div>
+            <h2 class="text-lg font-semibold normal">Recent Transactions</h2>
         </div>
-        <button class="primary-btn !m-0 !px-10 !py-3">Filter</button>
-      </form>
-
-      <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
         <table
           class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
           <thead
@@ -73,11 +25,6 @@ const getSales = () => {
                 scope="col"
                 class="px-6 py-3">
                 Customer Name
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3">
-                Total Items
               </th>
               <th
                 scope="col"
@@ -111,9 +58,9 @@ const getSales = () => {
               </th>
             </tr>
           </thead>
-          <tbody v-if="salesStore.sales">
+          <tbody v-if="recentSales">
             <tr
-              v-for="sale in salesStore.sales"
+              v-for="sale in recentSales"
               :key="sale.id"
               class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
               <td
@@ -123,10 +70,6 @@ const getSales = () => {
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white uppercase">
                 {{ sale.customer ? sale.customer.name : "Walkin Customer" }}
-              </td>
-              <td
-                class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">
-                {{ sale.sale_items.length }}
               </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
@@ -194,5 +137,4 @@ const getSales = () => {
         </table>
       </div>
     </div>
-  </div>
 </template>
