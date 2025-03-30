@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import PosView from "~/components/shared/PosView.vue";
 
 definePageMeta({
   layout: "pos-layout",
@@ -308,31 +309,7 @@ const createSales = async (payment) => {
       <!-- Right Section: Categories & Products -->
       <div class="w-2/3 py-8 px-8 flex flex-col justify-between">
         <div>
-          <h2 class="text-lg font-bold mb-4">Categories</h2>
-          <div class="grid grid-cols-4 xl:grid-cols-6 gap-4 border-b border-gray-200 pb-4">
-            <div
-              v-for="category in categoryStore.categories"
-              :key="category.id"
-              class="bg-white border border-dashed border-gray-300 px-4 py-6 text-sm xl:text-base font-semibold text-center rounded cursor-pointer hover:bg-blue-300 hover:border-solid min-h-25 flex items-center justify-center" 
-              @click="selectCategory(category.id)">
-              {{ category.name }}
-            </div>
-          </div>
-          <div v-if="selectedCategory">
-            <h2 class="text-lg font-bold mt-6">Products</h2>
-            <div class="grid grid-cols-5 gap-4 mt-2">
-              <div
-                v-for="product in filteredProducts"
-                :key="product.id"
-                class="bg-white shadow p-4 rounded cursor-pointer hover:bg-gray-100 min-h-25"
-                @click="addToCart(product)">
-                <h3 class="text-sm font-semibold capitalize">
-                  {{ product.name }}
-                </h3>
-                <p class="text-gray-600">${{ product.selling_price }}</p>
-              </div>
-            </div>
-          </div>
+          <PosView @addToCart="addToCart" />
         </div>
 
         <div class="grid grid-cols-3 gap-6">

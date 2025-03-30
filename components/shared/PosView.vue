@@ -1,13 +1,13 @@
 <script setup>
 import { ref } from "vue";
 import ProductsTable from "./ProductsTable.vue";
-import CreateProduct from "./CreateProduct.vue";
-
-defineProps({
-  categories: Array,
-});
 
 const categoryStore = useCategoryStore();
+
+onMounted(() => {
+  categoryStore.fetchParentCategories();
+  categoryStore.fetchCategories();
+});
 
 const currentCategory = ref(null);
 const childCategories = ref([]);
@@ -79,18 +79,11 @@ const confirmDelete = async (value) => {
     }
   }
 };
-
-const productCreateSuccess = () => {
-  // console.log(currentCategory.id)
-  fetchSubcategoriesAndProducts(currentCategory.value);
-};
 </script>
 
 <template>
   <div>
-    <h2 class="py-2 px-4 rounded-md font-semibold shadow-md mb-6 bg-blue-100">
-      Product Categories
-    </h2>
+    <h2 class="text-2xl font-bold mb-4">Product Inventory</h2>
     <!-- Breadcrumb Navigation -->
     <div
       v-if="categoryHistory.length"
@@ -102,18 +95,9 @@ const productCreateSuccess = () => {
       </button>
       <span
         v-for="(category, index) in categoryHistory"
-        :key="category.id"
-        class="text-lg font-semibold">
+        :key="category.id" class="text-lg font-semibold">
         <span v-if="index > 0"> / </span>
-        <span
-          class="px-2"
-          :class="[
-            index + 1 == categoryHistory.length
-              ? 'text-green-600 underline'
-              : '',
-          ]"
-          >{{ category.name }}</span
-        >
+        <span class=" px-2" :class="[index + 1 == categoryHistory.length ? 'text-green-600' : '']">{{ category.name }}</span>
       </span>
     </div>
 
@@ -122,62 +106,32 @@ const productCreateSuccess = () => {
       v-if="childCategories.length || !currentCategory"
       class="grid grid-cols-6 gap-6 pb-8">
       <div
-        v-for="category in currentCategory ? childCategories : categories"
+        v-for="category in currentCategory
+          ? childCategories
+          : categoryStore.parentCategories"
         :key="category.id"
         class="border border-gray-200 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden">
         <div
           @click="fetchSubcategoriesAndProducts(category)"
-          class="py-5 px-6 hover:bg-blue-100 w-full animate">
+          class="py-5 px-6 hover:bg-blue-100 w-full h-full flex items-center justify-center animate">
           {{ category.name }}
-        </div>
-
-        <div
-          class="w-full border-t border-gray-100 flex px-2 py-2 justify-between">
-          <button
-            @click="confirmDelete(category.id)"
-            class="font-medium text-red-400 hover:text-red-600 dark:text-red-500 hover:underline cursor-pointer">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-            </svg>
-          </button>
-          <button
-            @click="$emit('editCategory', category)"
-            class="font-medium text-blue-400 hover:text-blue-600 animate dark:text-blue-500 hover:underline cursor-pointer">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-            </svg>
-          </button>
         </div>
       </div>
     </div>
 
     <!-- Products Table -->
-    <div class="mt-6">
-      <div class="flex flex-col gap-6">
-        <CreateProduct
-          :currentCategory="currentCategory"
-          @create-product="productCreateSuccess" />
-        <div v-if="products.length">
-          <ProductsTable :products="products" />
-        </div>
+    <div
+      v-if="products.length"
+      class="mt-6 grid grid-cols-5 gap-6 pb-8">
+      <div
+        v-for="product in products"
+        :key="product.id"
+        class="border border-gray-200 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden py-5 px-6 hover:bg-green-400 w-full animate group text-black"
+        @click="$emit('addToCart', product)">
+        <h3 class="text-sm font-semibold capitalize">
+          {{ product.name }}
+        </h3>
+        <p class="text-green-500 font-bold mt-2 group-hover:text-black">${{ product.selling_price }}</p>
       </div>
     </div>
   </div>

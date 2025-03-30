@@ -57,13 +57,32 @@ export const useCategoryStore = defineStore("category", () => {
     }
   };
 
+  const updateCategory = async (categoryId, updatedData) => {
+    try {
+      const response = await $fetch(`${baseURL}/categories/${categoryId}`, {
+        method: "PATCH", // Use "PUT" if replacing the entire resource
+        body: updatedData,
+      });
+  
+      return response;
+    } catch (err) {
+      console.error("Error updating category:", err);
+  
+      if (err.response && err.response._data) {
+        return err.response._data;
+      }
+  
+      return { error: "An unexpected error occurred. Please try again." };
+    }
+  };
+
   return {
     categories,
     parentCategories,
     fetchCategories,
     fetchParentCategories,
     addCategory,
-    // updateCustomer,
+    updateCategory,
     deleteCategory,
   };
 });
