@@ -31,6 +31,26 @@ export const useProductStore = defineStore("product", () => {
     }
   };
 
+  const updateProduct = async (productId, updatedData) => {
+    try {
+      const response = await $fetch(`${baseURL}/products/${productId}`, {
+        method: "PATCH", // Use "PUT" if replacing the entire resource
+        body: updatedData,
+      });
+  
+      return response;
+    } catch (err) {
+      console.error("Error updating product:", err);
+  
+      if (err.response && err.response._data) {
+        return err.response._data;
+      }
+  
+      return { error: "An unexpected error occurred. Please try again." };
+    }
+  };
+
+
   const deleteProduct = async (categoryId) => {
     try {
       const response = await $fetch(baseURL + "/products/" + categoryId, {
@@ -48,7 +68,7 @@ export const useProductStore = defineStore("product", () => {
     products,
     fetchProducts,
     addProduct,
-    // updateCustomer,
+    updateProduct,
     deleteProduct,
   };
 });

@@ -14,6 +14,19 @@ const childCategories = ref([]);
 const products = ref([]);
 const categoryHistory = ref([]); // To track breadcrumb navigation
 
+const editProduct = ref(null);
+
+const openModal = ref(false);
+
+const toggleModal = (value) => {
+  console.log("Iam tirggered")
+  openModal.value = value
+  if(value == false) {
+    editProduct.value = null
+  }
+};
+
+
 const fetchSubcategoriesAndProducts = async (category) => {
   try {
     const response = await $fetch(
@@ -84,6 +97,14 @@ const productCreateSuccess = () => {
   // console.log(currentCategory.id)
   fetchSubcategoriesAndProducts(currentCategory.value);
 };
+
+// Set the `editProduct` when the "Edit" button is clicked
+const handleEditProduct = (product) => {
+  console.log("Helllo")
+  editProduct.value = product;
+  openModal.value = true
+};
+
 </script>
 
 <template>
@@ -120,14 +141,14 @@ const productCreateSuccess = () => {
     <!-- Parent/Child Categories Grid -->
     <div
       v-if="childCategories.length || !currentCategory"
-      class="grid grid-cols-6 gap-6 pb-8">
+      class="grid grid-cols-6 xl:grid-cols-8 gap-6 pb-8">
       <div
         v-for="category in currentCategory ? childCategories : categories"
         :key="category.id"
         class="border border-gray-200 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden">
         <div
           @click="fetchSubcategoriesAndProducts(category)"
-          class="py-5 px-6 hover:bg-blue-100 w-full animate">
+          class="py-5 px-6 hover:bg-blue-100 w-full h-full flex items-center justify-center animate">
           {{ category.name }}
         </div>
 
@@ -174,9 +195,13 @@ const productCreateSuccess = () => {
       <div class="flex flex-col gap-6">
         <CreateProduct
           :currentCategory="currentCategory"
-          @create-product="productCreateSuccess" />
+          @create-product="productCreateSuccess"
+          :editProduct="editProduct"
+          :openModal="openModal"
+          @close-modal="toggleModal" />
+
         <div v-if="products.length">
-          <ProductsTable :products="products" />
+          <ProductsTable :products="products" @edit-product="handleEditProduct" @create-product="productCreateSuccess" />
         </div>
       </div>
     </div>

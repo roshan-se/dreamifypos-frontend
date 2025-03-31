@@ -3,11 +3,13 @@ import ProductsTable from "~/components/shared/ProductsTable.vue";
 
 const props = defineProps({
   currentCategory: Object,
+  editProduct: Object, // New prop for editing
+  openModal: Boolean,
 });
 
 const emit = defineEmits();
 
-const openModal = ref(false);
+//const openModal = ref(false);
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
 const supplierStore = useSupplierStore();
@@ -26,9 +28,26 @@ const productFormData = reactive({
   status: "active",
 });
 
-const toggleModal = () => {
-  openModal.value = !openModal.value;
-};
+// const toggleModal = () => {
+//   openModal.value = !openModal.value;
+// };
+
+// If there's an editProduct, populate the form with its data
+watchEffect(() => {
+  if (props.editProduct) {
+    productFormData.name = props.editProduct.name;
+    productFormData.sku = props.editProduct.sku;
+    productFormData.barcode = props.editProduct.barcode;
+    productFormData.category_id = props.editProduct.category_id;
+    productFormData.supplier_id = props.editProduct.supplier_id;
+    productFormData.purchase_price = props.editProduct.purchase_price;
+    productFormData.selling_price = props.editProduct.selling_price;
+    productFormData.stock_quantity = props.editProduct.stock_quantity;
+    productFormData.stock_alert_threshold =
+      props.editProduct.stock_alert_threshold;
+    productFormData.status = props.editProduct.status;
+  }
+});
 
 const handleCreateProduct = async () => {
   productFormData.category_id = props.currentCategory.id;
@@ -39,28 +58,55 @@ const handleCreateProduct = async () => {
     console.log("Checking response in form", Object.values(res.errors)[0][0]);
     errors.value = Object.values(res.errors)[0][0];
   } else {
-    openModal.value = false;
-    productFormData.name = "";
-    productFormData.sku = "";
-    productFormData.barcode = "";
-    productFormData.category_id = null;
-    productFormData.supplier_id = null;
-    productFormData.purchase_price = null;
-    productFormData.selling_price = null;
-    productFormData.stock_quantity = null;
-    productFormData.stock_alert_threshold = 5;
-    productFormData.status = "active";
-
-
+    //openModal.value = false;
+    closeModal()
+    resetForm();
     useToastify("Product added successfully!", {
       autoClose: 3000,
       position: ToastifyOption.POSITION.TOP_RIGHT,
       type: "success",
     });
-
-    emit('create-product');
-    //productStore.fetchProducts();
+    emit("create-product");
   }
+};
+
+const handleUpdateProduct = async () => {
+  productFormData.category_id = props.currentCategory.id;
+  const res = await productStore.updateProduct(props.editProduct.id,productFormData);
+
+  if (res.errors) {
+    console.log("Check", res.message);
+    console.log("Checking response in form", Object.values(res.errors)[0][0]);
+    errors.value = Object.values(res.errors)[0][0];
+  } else {
+    //openModal.value = false;
+    resetForm();
+    useToastify("Product updated successfully!", {
+      autoClose: 3000,
+      position: ToastifyOption.POSITION.TOP_RIGHT,
+      type: "success",
+    });
+    closeModal()
+    emit("create-product");
+  }
+};
+
+const resetForm = () => {
+  productFormData.name = "";
+  productFormData.sku = "";
+  productFormData.barcode = "";
+  productFormData.category_id = null;
+  productFormData.supplier_id = null;
+  productFormData.purchase_price = null;
+  productFormData.selling_price = null;
+  productFormData.stock_quantity = null;
+  productFormData.stock_alert_threshold = 5;
+  productFormData.status = "active";
+};
+
+const closeModal = () => {
+  resetForm();
+  emit("close-modal", false);
 };
 
 onMounted(() => {
@@ -71,11 +117,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div v-if="currentCategory">
     <button
-      @click="toggleModal"
+      @click="$emit('close-modal', true)"
       class="px-8 py-2 rounded-md bg-blue-600 text-white">
-      Add Product
+      {{ editProduct ? "Edit Product" : "Add Product" }}
     </button>
 
     <!-- Main modal -->
@@ -89,11 +135,10 @@ onMounted(() => {
           <div
             class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-              Add New Category
+              {{ editProduct ? "Edit Product" : "Add New Product" }}
             </h3>
             <button
-              @click="toggleModal"
-              type="button"
+              @click="closeModal"
               class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
               data-modal-hide="authentication-modal">
               <svg
@@ -121,7 +166,9 @@ onMounted(() => {
             </div>
             <form
               class="space-y-4"
-              @submit.prevent="handleCreateProduct">
+              @submit.prevent="
+                editProduct ? handleUpdateProduct() : handleCreateProduct()
+              ">
               <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                   <label
@@ -165,7 +212,6 @@ onMounted(() => {
                     class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >Category</label
                   >
-
                   <div
                     type="text"
                     class="input-field !bg-blue-100"
@@ -260,7 +306,7 @@ onMounted(() => {
               <button
                 type="submit"
                 class="primary-btn w-full">
-                Create
+                {{ editProduct ? "Update" : "Create" }}
               </button>
             </form>
           </div>
