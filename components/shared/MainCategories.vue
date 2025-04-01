@@ -141,7 +141,7 @@ const handleEditProduct = (product) => {
     <!-- Parent/Child Categories Grid -->
     <div
       v-if="childCategories.length || !currentCategory"
-      class="grid grid-cols-6 xl:grid-cols-8 gap-6 pb-8">
+      class="grid grid-cols-4 lg:grid-cols-5 2xl:grid-cols-8 gap-6 pb-8">
       <div
         v-for="category in currentCategory ? childCategories : categories"
         :key="category.id"

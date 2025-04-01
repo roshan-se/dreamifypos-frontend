@@ -162,7 +162,7 @@ const createSales = async (payment) => {
     <div class="flex min-h-[calc(100vh-60px)]">
       <!-- Left Section: Shopping Cart -->
       <div
-        class="relative w-1/3 border-r border-gray-200 px-4 py-8 flex flex-col justify-between">
+        class="relative w-1/2 border-r border-gray-200 bg-gray-100 px-4 py-8 flex flex-col justify-between">
         <div>
           <!-- Search Customer -->
           <div class="mb-4 flex gap-4">
@@ -229,29 +229,31 @@ const createSales = async (payment) => {
             <thead
               class="w-full text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr class="">
+                <th class="w-[10%] px-6 py-3 text-center">Qty</th>
                 <th
                   scope="col"
-                  class="px-6 py-3">
+                  class="w-[35%] px-6 py-3">
                   Product
                 </th>
+
                 <th
                   scope="col"
-                  class="px-6 py-3 text-center">
-                  Qty
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3">
+                  class="w-[15%] px-6 py-3">
                   Price
                 </th>
                 <th
                   scope="col"
-                  class="px-6 py-3">
+                  class="w-[15%] px-6 py-3">
+                  Tax
+                </th>
+                <th
+                  scope="col"
+                  class="w-[15%] px-6 py-3">
                   Total
                 </th>
                 <th
                   scope="col"
-                  class="px-6 py-3"></th>
+                  class="w-[10%] px-2 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -259,9 +261,6 @@ const createSales = async (payment) => {
                 v-for="(item, index) in cart"
                 :key="index"
                 class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200 text-sm">
-                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  {{ item.name }}
-                </td>
                 <td
                   class="px-6 py-4 font-medium text-gray-900 dark:text-white text-center">
                   <!-- <input
@@ -272,42 +271,65 @@ const createSales = async (payment) => {
                   {{ item.quantity }}
                 </td>
                 <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                  <span class="line-clamp-1">{{ item.name }}</span>
+                </td>
+
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
                   ${{ item.selling_price }}
+                </td>
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                  ${{ item.selling_price * 0.1 }}
                 </td>
                 <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
                   ${{ item.selling_price * item.quantity }}
                 </td>
-                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                <td class="px-2 py-4 font-medium text-gray-900 dark:text-white">
                   <button
                     @click="removeFromCart(index)"
                     class="text-red-500">
-                    X
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="size-5">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <div class="mt-4 w-full border-t border-dashed border-gray-300 pt-4">
-          <h3 class="text-sm font-semibold flex justify-between">
-            <span>Subtotal: </span> <span>${{ subtotal }}</span>
-          </h3>
-          <h3 class="text-sm font-semibold flex justify-between">
-            <span>GST (10%): </span> <span>${{ gstAmount }}</span>
-          </h3>
-          <h3 class="text-sm font-semibold flex justify-between">
-            <span>Discount: </span>
-            <span>{{ discount ? `${discount}` : "$0.00" }}</span>
-          </h3>
-          <h3 class="text-sm font-semibold flex justify-between">
-            <span>Total: </span> <span>${{ finalTotal }}</span>
-          </h3>
+        <div>
+          <div
+            class="mt-4 w-full border-gray-100 rounded-sm bg-white px-6 py-4 mb-4 pt-4 flex flex-col">
+            <h3 class="text-sm font-semibold flex justify-between">
+              <span>Discount: </span>
+              <span>{{ discount ? `${discount}` : "$0.00" }}</span>
+            </h3>
+            <h3 class="text-sm font-semibold flex justify-between">
+              <span>Subtotal: </span> <span>${{ subtotal }}</span>
+            </h3>
+            <h3 class="text-sm font-semibold flex justify-between">
+              <span>Tax: </span> <span>${{ gstAmount }}</span>
+            </h3>
+          </div>
+          <div
+            class="bg-white shadow-sm py-4 px-6 rounded-sm border border-gray-100">
+            <h3 class="text-lg font-semibold flex justify-between">
+              <span>Total: </span> <span>${{ finalTotal }}</span>
+            </h3>
+          </div>
         </div>
       </div>
 
       <!-- Right Section: Categories & Products -->
-      <div class="w-2/3 py-8 px-8 flex flex-col justify-between">
+      <div class="w-1/2 py-8 px-8 flex flex-col justify-between">
         <div>
           <PosView @addToCart="addToCart" />
         </div>
@@ -350,19 +372,15 @@ const createSales = async (payment) => {
     <div
       v-if="openModal"
       class="overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center content-center w-full md:inset-0 h-full max-h-full bg-black/70">
-      <div class="relative p-4 w-full max-w-2xl m-auto">
+      <div class="relative p-4 w-full max-w-xl m-auto">
         <!-- Modal content -->
         <div class="relative bg-white rounded-lg shadow-sm dark:bg-gray-700">
           <!-- Modal header -->
-          <div
-            class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-              Sales Checkout
-            </h3>
+          <div class="flex items-center justify-end pr-5 pt-2">
             <button
               @click="toggleModal"
               type="button"
-              class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+              class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center cursor-pointer"
               data-modal-hide="authentication-modal">
               <svg
                 class="w-3 h-3"
@@ -381,30 +399,51 @@ const createSales = async (payment) => {
             </button>
           </div>
           <!-- Modal body -->
-          <div class="p-4 md:p-5">
-            <div class="space-y-4">
-              <div>
-                <h4 class="text-center text-2xl text-slate-500">
-                  Total Amount Pending
-                </h4>
-                <h2
-                  class="text-center text-5xl font-semibold text-green-500 py-6">
-                  ${{ finalTotal }}
-                </h2>
-              </div>
-              <div class="flex items-center gap-4">
+          <div class="px-8 pb-8 pt-0 flex flex-col gap-6 justify-center">
+            <h3 class="text-4xl font-semibold text-gray-900 text-center">
+              Sales Checkout
+            </h3>
+            <div class="flex flex-col gap-4 items-center align-middle">
+              <h4 class="text-xl font-semibold text-black uppercase">
+                Amount Pending
+              </h4>
+              <h2 class="text-5xl font-semibold text-green-500">
+                ${{ finalTotal }}
+              </h2>
+            </div>
+            <div>
+              <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-2">
+                  <label for="" class="font-semibold">Bank</label>
+                  <div class="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Enter Amount"
+                      class="input-field" />
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label for="" class="font-semibold">Cash</label>
+                  <div class="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Enter Amount"
+                      class="input-field" />
+                  </div>
+                </div>
+
                 <button
                   @click="createSales('bank')"
                   type="button"
                   class="primary-btn w-full">
-                  Bank Payment
+                  Confirm Payment
                 </button>
-                <button
+                <!-- <button
                   @click="createSales('cash')"
                   type="button"
                   class="secondary-btn w-full bg-stone-500">
                   Cash Payment
-                </button>
+                </button> -->
               </div>
             </div>
           </div>
