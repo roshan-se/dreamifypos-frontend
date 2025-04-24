@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import CreateRepair from "~/components/shared/CreateRepair.vue";
 import PosView from "~/components/shared/PosView.vue";
 
 definePageMeta({
@@ -155,6 +156,15 @@ const createSales = async (payment) => {
     alert("Error processing sale. Please try again.");
   }
 };
+
+
+const openRepairModal = ref(false);
+
+const toggleRepairModal = (value) => {
+  openRepairModal.value = value
+}
+
+
 </script>
 
 <template>
@@ -344,6 +354,7 @@ const createSales = async (payment) => {
             View Invoices
           </button>
           <button
+          @click="() => toggleRepairModal(true)"
             class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-blue-500 hover:bg-blue-600 text-white">
             Create Ticket
           </button>
@@ -368,6 +379,11 @@ const createSales = async (payment) => {
         </div>
       </div>
     </div>
+    <!-- Repair modal  -->
+      <CreateRepair :openRepairModal="openRepairModal" />
+    <!-- End Repair Modal  -->
+
+
     <!-- Main modal -->
     <div
       v-if="openModal"
@@ -428,6 +444,15 @@ const createSales = async (payment) => {
                     <input
                       type="text"
                       placeholder="Enter Amount"
+                      class="input-field" />
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label for="" class="font-semibold">Change</label>
+                  <div class="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Return Amount"
                       class="input-field" />
                   </div>
                 </div>
