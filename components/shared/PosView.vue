@@ -104,16 +104,16 @@ const confirmDelete = async (value) => {
     <!-- Parent/Child Categories Grid -->
     <div
       v-if="childCategories.length || !currentCategory"
-      class="grid grid-cols-4 2xl:grid-cols-6 gap-6 pb-8">
+      class="grid grid-cols-5 2xl:grid-cols-6 gap-2 pb-8">
       <div
         v-for="category in currentCategory
           ? childCategories
           : categoryStore.parentCategories"
         :key="category.id"
-        class="border border-gray-200 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden">
+        class="border border-gray-200 rounded-sm flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden">
         <div
           @click="fetchSubcategoriesAndProducts(category)"
-          class="py-5 px-4 2xl:px-6 hover:bg-blue-100 w-full h-full flex items-center justify-center animate line-clamp-1">
+          class="py-3 px-2 text-base hover:bg-blue-100 w-full h-full flex items-center justify-center animate line-clamp-1">
           {{ category.name }}
         </div>
       </div>
@@ -122,16 +122,16 @@ const confirmDelete = async (value) => {
     <!-- Products Table -->
     <div
       v-if="products.length"
-      class="mt-6 grid grid-cols-4 2xl:grid-cols-6 gap-4 pb-8">
+      class="mt-6 grid grid-cols-5 2xl:grid-cols-6 gap-2 pb-8">
       <div
         v-for="product in products"
         :key="product.id"
-        class="border border-gray-200 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden py-4 px-4 2xl:px-6 hover:bg-green-400 w-full animate group text-black"
+        class="border border-gray-200 rounded-sm flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden py-2 px-2 2xl:px-2 hover:bg-green-400 w-full animate group text-black"
         @click="$emit('addToCart', product)">
-        <h3 class="text-sm font-medium text-balance">
+        <h3 class="text-sm font-medium line-clamp-3">
           {{ product.name }}
         </h3>
-        <p class="text-green-500 font-bold mt-2 group-hover:text-black">${{ product.selling_price }}</p>
+        <p class="text-sm text-green-500 font-bold mt-1 group-hover:text-black">${{ product.selling_price }}</p>
       </div>
     </div>
   </div>

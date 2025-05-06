@@ -45,11 +45,6 @@ const confirmDelete = async (value) => {
           <th
             scope="col"
             class="px-6 py-3">
-            Supplier
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3">
             Quantity
           </th>
           <th
@@ -77,10 +72,6 @@ const confirmDelete = async (value) => {
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
             {{ purchase.product?.name || "N/A" }}
-          </td>
-          <td
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{ purchase.supplier?.name || "N/A" }}
           </td>
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">

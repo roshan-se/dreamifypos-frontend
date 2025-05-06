@@ -1,5 +1,25 @@
+<template>
+  <div
+    class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-xl font-semibold uppercase">Purchase</h1>
+
+      <NuxtLink
+        to="/purchase/create"
+        class="primary-btn">
+        Create
+      </NuxtLink>
+    </div>
+
+    <!-- Table of recent purchases -->
+    <div v-if="!showCreateForm">
+      <RecentPurchaseTable />
+    </div>
+  </div>
+</template>
+
 <script setup>
-import RecentPurchaseTable from "~/components/shared/RecentPurchaseTable.vue"
+import RecentPurchaseTable from "~/components/shared/RecentPurchaseTable.vue";
 // State management
 const showCreateForm = ref(false);
 const purchases = ref([]);
@@ -15,7 +35,7 @@ onMounted(() => {
   supplierStore.fetchSuppliers();
   purchaseStore.fetchPurchases();
 
-  console.log(purchaseStore.purchases)
+  console.log(purchaseStore.purchases);
 });
 
 const allProducts = computed(() => productStore.products);
@@ -80,110 +100,3 @@ const createPurchase = async () => {
   }
 };
 </script>
-
-<template>
-  <div
-    class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-xl font-semibold uppercase">Purchase</h1>
-
-      <button
-        @click="toggleForm"
-        :class="[ showCreateForm ? 'danger-btn ' : 'primary-btn'] ">
-        {{ showCreateForm ? 'Cancel' : 'Create'}}
-      </button>
-    </div>
-
-    <div>
-      <!-- Form Section -->
-      <div
-        v-if="showCreateForm"
-        class="pt-8 border-t border-gray-300">
-        <h2 class="text-lg font-semibold mb-4">New Store Purchase</h2>
-        <div class="max-w-max mb-6 flex items-center gap-6">
-          <label class="block text-sm font-medium text-gray-900 dark:text-white"
-            >Supplier</label
-          >
-          <select
-            v-model="supplier_id"
-            class="input-field">
-            <option value="">Select supplier</option>
-            <option
-              v-for="supplier in supplierStore.suppliers"
-              :key="supplier.id"
-              :value="supplier.id">
-              {{ supplier.name }}
-            </option>
-          </select>
-        </div>
-
-        <!-- SKU Input -->
-        <div class="mb-4">
-          <input
-            v-model="skuInput"
-            @keyup.enter="addProductToPurchase"
-            type="text"
-            class="border rounded p-2 w-full"
-            placeholder="Enter SKU and press Enter" />
-        </div>
-
-        <!-- Purchase Table -->
-        <table class="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-4 py-2">Product Name</th>
-              <th class="border border-gray-300 px-4 py-2">SKU</th>
-              <th class="border border-gray-300 px-4 py-2">Price</th>
-              <th class="border border-gray-300 px-4 py-2">Quantity</th>
-              <th class="border border-gray-300 px-4 py-2">Total</th>
-              <th class="border border-gray-300 px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(item, index) in purchases"
-              :key="item.id">
-              <td class="border border-gray-300 px-4 py-2">{{ item.name }}</td>
-              <td class="border border-gray-300 px-4 py-2">{{ item.sku }}</td>
-              <td class="border border-gray-300 px-4 py-2">
-                ${{ item.selling_price }}
-              </td>
-              <td class="border border-gray-300 px-4 py-2">
-                <input
-                  type="number"
-                  v-model="item.quantity"
-                  min="1"
-                  class="border rounded p-1 w-16" />
-              </td>
-              <td class="border border-gray-300 px-4 py-2">
-                ${{ (item.selling_price * item.quantity).toFixed(2) }}
-              </td>
-              <td class="border border-gray-300 px-4 py-2">
-                <button
-                  @click="removeProduct(index)"
-                  class="bg-red-500 text-white px-2 py-1 rounded">
-                  Remove
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Submit Button -->
-        <div class="mt-4">
-          <button
-            class="primary-btn"
-            @click="createPurchase" :disabled="purchases.length < 1">
-            Submit Purchase
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Table of recent purchases -->
-     <div v-if="!showCreateForm">
-        <RecentPurchaseTable />
-     </div>
-    
-  </div>
-</template>

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class=" font-inter">
     <Navbar />
     <Sidebar />
     <div class="p-4 sm:ml-64">

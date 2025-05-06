@@ -2,6 +2,17 @@
 import { ref, computed, onMounted } from "vue";
 import CreateRepair from "~/components/shared/CreateRepair.vue";
 import PosView from "~/components/shared/PosView.vue";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 definePageMeta({
   layout: "pos-layout",
@@ -161,10 +172,8 @@ const createSales = async (payment) => {
 const openRepairModal = ref(false);
 
 const toggleRepairModal = (value) => {
-  openRepairModal.value = value
-}
-
-
+  openRepairModal.value = value;
+};
 </script>
 
 <template>
@@ -273,12 +282,12 @@ const toggleRepairModal = (value) => {
                 class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200 text-sm">
                 <td
                   class="px-6 py-4 font-medium text-gray-900 dark:text-white text-center">
-                  <!-- <input
+                  <input
                   type="number"
                   v-model="item.quantity"
                   class="w-12 border p-1 text-center"
-                  min="1" /> -->
-                  {{ item.quantity }}
+                  min="1" />
+                  <!-- {{ item.quantity }} -->
                 </td>
                 <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
                   <span class="line-clamp-1">{{ item.name }}</span>
@@ -346,18 +355,19 @@ const toggleRepairModal = (value) => {
 
         <div class="grid grid-cols-3 gap-6">
           <button
-            class="py-6 px-6 bg-gray-100 text-lg rounded-lg border border-solid border-gray-100 text-gray-700 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 hover:bg-sky-600 hover:text-white">
+            class="global-btn">
             View Tickets
           </button>
           <button
-            class="py-6 px-6 bg-gray-100 text-lg rounded-lg border border-solid border-gray-100 text-gray-700 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 hover:bg-blue-600 hover:text-white">
+            class="global-btn">
             View Invoices
           </button>
-          <button
-          @click="() => toggleRepairModal(true)"
+          <NuxtLink
+            to="/repairs/create"
+            target="_blank"
             class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-blue-500 hover:bg-blue-600 text-white">
             Create Ticket
-          </button>
+          </NuxtLink>
           <button
             class="py-6 px-6 bg-gray-100 text-lg rounded-lg border border-solid border-gray-100 text-gray-700 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 hover:bg-blue-600 hover:text-white">
             More Actions
@@ -369,111 +379,88 @@ const toggleRepairModal = (value) => {
             @click="toggleModal">
             Cancel
           </button>
-          <button
-            class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-green-500 hover:bg-green-600 text-white"
-            :class="cart.length < 1 ? 'opacity-50' : ''"
-            :disabled="cart.length < 1"
-            @click="toggleModal">
-            Checkout
-          </button>
+
+          <AlertDialog>
+            <AlertDialogTrigger as-child>
+              <button
+                class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-green-500 hover:bg-green-600 text-white"
+                :class="cart.length < 1 ? 'opacity-50' : ''"
+                :disabled="cart.length < 1"
+                @click="toggleModal">
+                Checkout
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Sales Checkout</AlertDialogTitle>
+                <AlertDialogDescription>
+                  <div class="flex flex-col gap-2 items-center align-middle">
+                    <h4 class="text-xl font-semibold text-black uppercase">
+                      Amount
+                    </h4>
+                    <h2 class="text-5xl font-semibold text-green-500">
+                      ${{ finalTotal }}
+                    </h2>
+                  </div>
+                  <div>
+                    <div class="flex flex-col gap-4">
+                      <div class="flex flex-col gap-2">
+                        <label
+                          for=""
+                          class="font-semibold"
+                          >Eftpos</label
+                        >
+                        <div class="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Enter Amount"
+                            class="input-field" />
+                        </div>
+                      </div>
+                      <div class="flex flex-col gap-2">
+                        <label
+                          for=""
+                          class="font-semibold"
+                          >Cash</label
+                        >
+                        <div class="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Enter Amount"
+                            class="input-field" />
+                        </div>
+                      </div>
+                      <div class="flex flex-col gap-2">
+                        <label
+                          for=""
+                          class="font-semibold"
+                          >Change</label
+                        >
+                        <div class="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Return Amount"
+                            class="input-field" />
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel @click="resetForm">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  @click="() => createSales('bank')"
+                  class="primary-btn"
+                  >Confirm</AlertDialogAction
+                >
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
-    <!-- Repair modal  -->
-      <CreateRepair :openRepairModal="openRepairModal" />
-    <!-- End Repair Modal  -->
 
-
-    <!-- Main modal -->
-    <div
-      v-if="openModal"
-      class="overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center content-center w-full md:inset-0 h-full max-h-full bg-black/70">
-      <div class="relative p-4 w-full max-w-xl m-auto">
-        <!-- Modal content -->
-        <div class="relative bg-white rounded-lg shadow-sm dark:bg-gray-700">
-          <!-- Modal header -->
-          <div class="flex items-center justify-end pr-5 pt-2">
-            <button
-              @click="toggleModal"
-              type="button"
-              class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center cursor-pointer"
-              data-modal-hide="authentication-modal">
-              <svg
-                class="w-3 h-3"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 14 14">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-              </svg>
-              <span class="sr-only">Close modal</span>
-            </button>
-          </div>
-          <!-- Modal body -->
-          <div class="px-8 pb-8 pt-0 flex flex-col gap-6 justify-center">
-            <h3 class="text-4xl font-semibold text-gray-900 text-center">
-              Sales Checkout
-            </h3>
-            <div class="flex flex-col gap-4 items-center align-middle">
-              <h4 class="text-xl font-semibold text-black uppercase">
-                Amount Pending
-              </h4>
-              <h2 class="text-5xl font-semibold text-green-500">
-                ${{ finalTotal }}
-              </h2>
-            </div>
-            <div>
-              <div class="flex flex-col gap-4">
-                <div class="flex flex-col gap-2">
-                  <label for="" class="font-semibold">Bank</label>
-                  <div class="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Enter Amount"
-                      class="input-field" />
-                  </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                  <label for="" class="font-semibold">Cash</label>
-                  <div class="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Enter Amount"
-                      class="input-field" />
-                  </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                  <label for="" class="font-semibold">Change</label>
-                  <div class="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Return Amount"
-                      class="input-field" />
-                  </div>
-                </div>
-
-                <button
-                  @click="createSales('bank')"
-                  type="button"
-                  class="primary-btn w-full">
-                  Confirm Payment
-                </button>
-                <!-- <button
-                  @click="createSales('cash')"
-                  type="button"
-                  class="secondary-btn w-full bg-stone-500">
-                  Cash Payment
-                </button> -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>

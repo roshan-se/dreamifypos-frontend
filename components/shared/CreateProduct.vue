@@ -13,6 +13,7 @@ const emit = defineEmits();
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
 const supplierStore = useSupplierStore();
+const variationStore = useVariationStore();
 const errors = ref("");
 
 const productFormData = reactive({
@@ -25,6 +26,7 @@ const productFormData = reactive({
   selling_price: null,
   stock_quantity: null,
   stock_alert_threshold: 5,
+  variation_id: null,
   status: "active",
 });
 
@@ -51,6 +53,8 @@ watchEffect(() => {
 
 const handleCreateProduct = async () => {
   productFormData.category_id = props.currentCategory.id;
+  productFormData.name =
+    props.currentCategory.name + " - " + productFormData.name;
   const res = await productStore.addProduct(productFormData);
 
   if (res.errors) {
@@ -59,7 +63,7 @@ const handleCreateProduct = async () => {
     errors.value = Object.values(res.errors)[0][0];
   } else {
     //openModal.value = false;
-    closeModal()
+    closeModal();
     resetForm();
     useToastify("Product added successfully!", {
       autoClose: 3000,
@@ -72,7 +76,10 @@ const handleCreateProduct = async () => {
 
 const handleUpdateProduct = async () => {
   productFormData.category_id = props.currentCategory.id;
-  const res = await productStore.updateProduct(props.editProduct.id,productFormData);
+  const res = await productStore.updateProduct(
+    props.editProduct.id,
+    productFormData
+  );
 
   if (res.errors) {
     console.log("Check", res.message);
@@ -86,7 +93,7 @@ const handleUpdateProduct = async () => {
       position: ToastifyOption.POSITION.TOP_RIGHT,
       type: "success",
     });
-    closeModal()
+    closeModal();
     emit("create-product");
   }
 };
@@ -97,6 +104,7 @@ const resetForm = () => {
   productFormData.barcode = "";
   productFormData.category_id = null;
   productFormData.supplier_id = null;
+  productFormData.variation_id = null;
   productFormData.purchase_price = null;
   productFormData.selling_price = null;
   productFormData.stock_quantity = null;
@@ -113,6 +121,7 @@ onMounted(() => {
   categoryStore.fetchCategories();
   productStore.fetchProducts();
   supplierStore.fetchSuppliers();
+  variationStore.fetchVariations();
 });
 </script>
 
@@ -175,7 +184,22 @@ onMounted(() => {
                     class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >Product Name</label
                   >
+                  <div
+                    v-if="!editProduct"
+                    class="flex items-center gap-2 rounded-lg border pl-2 bg-gray-800 overflow-hidden">
+                    <div class="text-sm text-white">
+                      {{ currentCategory.name }}
+                    </div>
+                    <input
+                      type="text"
+                      v-model="productFormData.name"
+                      class="input-field flex-1 !rounded-l-none !rounded-none !border-0 !border-l focus:outline-none"
+                      placeholder="Enter product name"
+                      required />
+                  </div>
+
                   <input
+                    v-if="editProduct"
                     type="text"
                     v-model="productFormData.name"
                     class="input-field"
@@ -287,6 +311,24 @@ onMounted(() => {
                     v-model="productFormData.stock_alert_threshold"
                     class="input-field"
                     placeholder="Default is 5" />
+                </div>
+
+                <div class="col-span-1">
+                  <label
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >Variation</label
+                  >
+                  <select
+                    v-model="productFormData.variation_id"
+                    class="input-field">
+                    <option value="">Select variation (optional)</option>
+                    <option
+                      v-for="variation in variationStore.variations"
+                      :key="variation.id"
+                      :value="variation.id">
+                      {{ variation.name }}
+                    </option>
+                  </select>
                 </div>
 
                 <div class="col-span-1">

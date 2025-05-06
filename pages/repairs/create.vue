@@ -1,8 +1,4 @@
 <script setup>
-import PosView from "~/components/shared/PosView.vue";
-
-const emit = defineEmits();
-
 /***
  * Call Pinia Store
  */
@@ -10,6 +6,9 @@ const productStore = useProductStore();
 const supplierStore = useSupplierStore();
 const categoryStore = useCategoryStore();
 const customerStore = useCustomerStore();
+const repairStore = useRepairStore();
+
+const employeeData = useEmployeeStore();
 
 const errors = ref("");
 
@@ -32,8 +31,10 @@ const repairFormData = reactive({
   description: null,
   status: "pending",
   total_cost: null,
-  payment_status: null,
+  payment_status: "",
   repair_items: [],
+  employee_id: "",
+  deposit_amount: null,
 });
 
 const searchQuery = ref("");
@@ -128,6 +129,7 @@ onMounted(() => {
   supplierStore.fetchSuppliers();
   categoryStore.fetchParentCategories();
   customerStore.fetchCustomers();
+  employeeData.fetchEmployees();
 });
 
 // Select a customer
@@ -208,6 +210,46 @@ const confirmDelete = async (value) => {
     }
   }
 };
+
+const handleCreateRepair = async () => {
+  errors.value = "";
+
+  if (!repairFormData.customer.id) {
+    errors.value = "Please select a customer.";
+    useToastify("Please select customer", {
+      autoClose: 3000,
+      position: ToastifyOption.POSITION.TOP_RIGHT,
+      type: "error",
+    });
+    return;
+  }
+  // build items array
+  const items = cart.value.map((it) => ({
+    product_id: it.id,
+    quantity: it.quantity,
+    price: it.selling_price,
+    subtotal: it.quantity * it.selling_price,
+    discount: 0,
+    tax: 0,
+    total_price: it.quantity * it.selling_price,
+  }));
+  repairFormData.repair_items = items;
+  repairFormData.total_cost = items.reduce((sum, i) => sum + i.subtotal, 0);
+
+  const res = await repairStore.addRepair(repairFormData);
+  if (res.errors) {
+    errors.value = Object.values(res.errors)[0][0];
+  } else {
+    useToastify("Repair created successfully!", {
+      autoClose: 3000,
+      position: ToastifyOption.POSITION.TOP_RIGHT,
+      type: "success",
+    });
+
+    resetForm();
+    router.push("/repairs");
+  }
+};
 </script>
 
 <template>
@@ -258,6 +300,42 @@ const confirmDelete = async (value) => {
           <div class="col-span-1">
             <label
               class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >Assigned To</label
+            >
+            <select
+              v-model="repairFormData.employee_id"
+              class="input-field"
+              placeholder="Select Employee">
+              <option
+                value=""
+                disabled>
+                Assign Employee...
+              </option>
+              <option
+                :value="employee.id"
+                v-for="employee in employeeData.employees">
+                {{ employee.name }}
+              </option>
+            </select>
+          </div>
+          <div class="col-span-1">
+            <label
+              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >Status</label
+            >
+            <select
+              v-model="repairFormData.status"
+              class="input-field">
+              <option value="pending">Pending</option>
+              <option value="pending">Waiting for parts</option>
+              <option value="pending">Parts Arrived</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Collected</option>
+            </select>
+          </div>
+          <div class="col-span-1">
+            <label
+              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >Customer Name</label
             >
 
@@ -282,7 +360,7 @@ const confirmDelete = async (value) => {
               disabled />
           </div>
 
-          <div class="col-span-2">
+          <div class="col-span-1">
             <label
               class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >Device Name</label
@@ -306,18 +384,6 @@ const confirmDelete = async (value) => {
               placeholder="Enter SKU" />
           </div>
 
-          <div class="col-span-1">
-            <label
-              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >Passcode</label
-            >
-            <input
-              type="text"
-              v-model="repairFormData.passcode"
-              class="input-field"
-              placeholder="Enter SKU" />
-          </div>
-
           <div class="col-span-2">
             <label
               class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -336,13 +402,16 @@ const confirmDelete = async (value) => {
               class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >Repair Items</label
             >
-            <div class="p-4 border-2 rounded-md border-dashed flex flex-col gap-2">
+            <div
+              class="p-4 border-2 rounded-md border-dashed flex flex-col gap-2">
               <div
                 v-for="(item, index) in cart"
                 :key="index"
                 class="flex justify-between items-center border-b">
                 <div class="text-sm">{{ index + 1 }}. {{ item.name }}</div>
-                <button class="danger-btn !text-xs !py-1 !px-2 !rounded-sm">
+                <button
+                  @click="removeFromCart(index)"
+                  class="danger-btn !text-xs !py-1 !px-2 !rounded-sm">
                   Remove
                 </button>
               </div>
@@ -351,26 +420,25 @@ const confirmDelete = async (value) => {
           <div class="col-span-1">
             <label
               class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >Passcode</label
+            >
+            <input
+              type="text"
+              v-model="repairFormData.passcode"
+              class="input-field"
+              placeholder="Enter SKU" />
+          </div>
+          <div class="col-span-1">
+            <label
+              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >Total Amount</label
             >
             <input
               type="text"
-              v-model="repairFormData.imei"
+              v-model="repairFormData.total_amount"
               class="input-field"
-              placeholder="Enter SKU" />
-          </div>
-
-          <div class="col-span-1">
-            <label
-              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >Status</label
-            >
-            <select
-              v-model="repairFormData.status"
-              class="input-field">
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-            </select>
+              placeholder="$---"
+              disabled />
           </div>
 
           <div class="col-span-1">
@@ -379,15 +447,35 @@ const confirmDelete = async (value) => {
               >Payment Status</label
             >
             <select
-              v-model="repairFormData.status"
-              class="input-field">
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
+              v-model="repairFormData.payment_status"
+              class="input-field placeholder:text-gray-200">
+              <option value="" class="text-gray-300">--- Select Payment Status ---</option>
+              <option value="pending">Pending Payment</option>
+              <option value="Deposit Paid">Deposit Paid</option>
+              <option value="pending">Not Paid</option>
+              <option value="paid">Full Paid</option>
             </select>
+          </div>
+          <div
+            class="col-span-1"
+            v-if="repairFormData.payment_status === 'Deposit Paid'">
+            <label
+              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >Deposit Amount</label
+            >
+            <input
+              type="text"
+              v-model="repairFormData.deposit_amount"
+              class="input-field"
+              placeholder="$---" />
           </div>
 
           <div class="col-span-2">
-            <button class="primary-btn w-full">Create Ticket</button>
+            <button
+              @click="handleCreateRepair"
+              class="primary-btn w-full">
+              Create Ticket
+            </button>
           </div>
         </div>
       </div>

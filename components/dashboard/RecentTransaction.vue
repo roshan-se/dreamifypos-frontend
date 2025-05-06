@@ -8,7 +8,7 @@ defineProps({
 <template>
     <div v-if="recentSales">
         <div>
-            <h2 class="text-lg font-semibold normal">Recent Transactions</h2>
+            <h2 class="text-lg font-semibold normal mb-6">Recent Transactions</h2>
         </div>
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
         <table

@@ -10,10 +10,22 @@ export default defineNuxtConfig({
       tailwindcss(),
     ],
   },
-  modules: ["@pinia/nuxt", "nuxt-toastify"],
+  modules: [
+    "@pinia/nuxt",
+    "nuxt-toastify",
+    'shadcn-nuxt',
+    '@nuxtjs/google-fonts',
+  ],
   toastify: {
     autoClose: 3000,
     position: 'top-right',
     theme: 'auto',
   },
+  googleFonts: {
+    families: {
+      'Inter': {
+        wght: [300, 400, 500, 600, 700]
+      }
+    }
+  }
 })
