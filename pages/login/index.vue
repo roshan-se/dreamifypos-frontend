@@ -7,6 +7,8 @@ const email = ref("");
 const password = ref("");
 const error = ref("");
 
+const router = useRouter()
+
 const handleSubmit = async () => {
   error.value = "";
 
@@ -27,7 +29,7 @@ const handleSubmit = async () => {
 
     if (data.value?.access_token) {
       localStorage.setItem("token", data.value.access_token);
-      router.push("/dashboard"); // Redirect after login
+      router.push("/"); // Redirect after login
     }
   } catch (err) {
     console.error("Login Error:", err);

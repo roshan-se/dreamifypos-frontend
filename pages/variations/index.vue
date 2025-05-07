@@ -1,5 +1,5 @@
 <script setup>
-import SuppliersTable from "~/components/shared/SuppliersTable.vue";
+
 import VariationsTable from "~/components/tables/VariationsTable.vue";
 
 import {

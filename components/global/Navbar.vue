@@ -1,4 +1,22 @@
 <script setup>
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const router = useRouter();
+
 const activeDrop = ref(false);
 const openModal = ref(false);
 
@@ -6,11 +24,30 @@ const toggleDropdown = () => {
   activeDrop.value = !activeDrop.value;
 };
 
-
-
 const toggleModal = () => {
   console.log("I am clicked");
   openModal.value = !openModal.value;
+};
+
+const logout = async () => {
+  const baseURL = "http://127.0.0.1:8000/api";
+  
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await $fetch(baseURL + "/logout", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    localStorage.removeItem("token");
+    router.push("/login");
+
+  } catch (err) {
+    console.error("Unexpected error:", err.response);
+  }
 };
 </script>
 
@@ -52,67 +89,55 @@ const toggleModal = () => {
         </div>
         <div class="flex items-center relative">
           <div class="flex items-center ms-3">
-            <div>
-              <button
-                type="button"
-                @click="toggleDropdown"
-                class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
-                aria-expanded="false"
-                data-dropdown-toggle="dropdown-user">
-                <span class="sr-only"> Open user menu </span>
-                <img
-                  class="w-8 h-8 rounded-full"
-                  src="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
-                  alt="user photo" />
-              </button>
-            </div>
-
-            <div
-              v-if="activeDrop"
-              class="z-50 my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-sm shadow-lg dark:bg-gray-700 dark:divide-gray-600 absolute right-0 top-6 border w-60"
-              id="dropdown-user">
-              <ul
-                class="py-1"
-                role="none">
-                <li>
-                  <a
-                    href="#"
-                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                    role="menuitem">
-                    Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a
-                    @click="toggleModal"
-                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                    role="menuitem">
-                    Clock In / Clock Out
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                    role="menuitem">
-                    Profile
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                    role="menuitem">
-                    Sign out
-                  </a>
-                </li>
-              </ul>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button
+                  variant="outline"
+                  class="cursor-pointer">
+                  <span class="relative">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="size-6">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+                    </svg>
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem class="cursor-pointer">
+                    <NuxtLink to="/" target="_blank" class="w-full">Dashboard</NuxtLink>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    class="cursor-pointer"
+                    @click="toggleModal">
+                    <span>Clock In/Out</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem class="cursor-pointer">
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    class="cursor-pointer"
+                    @click="logout">
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
     </div>
 
-    <ClockInOut :openModal="openModal" @close="openModal = false" />
+    <ClockInOut
+      :openModal="openModal"
+      @close="openModal = false" />
   </nav>
 </template>

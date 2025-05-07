@@ -4,463 +4,410 @@ import CreateRepair from "~/components/shared/CreateRepair.vue";
 import PosView from "~/components/shared/PosView.vue";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
+  AlertDialogTrigger,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
-definePageMeta({
-  layout: "pos-layout",
-});
+import { Input } from '@/components/ui/input'
 
-const openModal = ref(false);
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
+definePageMeta({ layout: "pos-layout" });
+
+// Stores
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
-
-// Selected category state
-const selectedCategory = ref(null);
-
-// Cart state
-const cart = ref([]);
-
-const toggleModal = () => {
-  openModal.value = !openModal.value;
-};
-
-// Filtered products based on selected category
-const filteredProducts = computed(() => {
-  if (!selectedCategory.value) return productStore.products;
-  return productStore.products.filter(
-    (p) => p.category_id === selectedCategory.value
-  );
-});
-
-// Compute total cart price
-const cartTotal = computed(() => {
-  return cart.value
-    .reduce((total, item) => total + item.selling_price * item.quantity, 0)
-    .toFixed(2);
-});
-
-// Select category
-const selectCategory = (categoryId) => {
-  selectedCategory.value = categoryId;
-};
-
-// Add product to cart
-const addToCart = (product) => {
-  const existingItem = cart.value.find((item) => item.id === product.id);
-  if (existingItem) {
-    existingItem.quantity++;
-  } else {
-    cart.value.push({ ...product, quantity: 1 });
-  }
-};
-
-// Remove product from cart
-const removeFromCart = (index) => {
-  cart.value.splice(index, 1);
-};
-
-// Checkout function
-const checkout = () => {
-  alert("Proceeding to checkout!");
-};
-
-const discount = ref(0); // Default discount amount
-
-const subtotal = computed(() => {
-  return cart.value
-    .reduce((total, item) => total + item.selling_price * item.quantity, 0)
-    .toFixed(2);
-});
-
-const gstAmount = computed(() => {
-  return (subtotal.value * 0.1).toFixed(2); // GST 10% (already included)
-});
-
-const finalTotal = computed(() => {
-  return (subtotal.value - discount.value).toFixed(2);
-});
-
 const customerStore = useCustomerStore();
 
+// State
+const selectedCategory = ref(null);
+const cart = ref([]);
 const searchQuery = ref("");
 const selectedCustomer = ref(null);
+const discount = ref(0);
 
-// Filter customers based on search query
+// Payment & checkout state
+const eftpos = ref("");
+const cash = ref("");
+const loading = ref(false);
+const success = ref(false);
+
+// Computed values
 const filteredCustomers = computed(() => {
   if (!searchQuery.value) return [];
-  return customerStore.customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  return customerStore.customers.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
+const subtotal = computed(() =>
+  cart.value.reduce((sum, item) => sum + item.selling_price * item.quantity, 0)
+);
+const gstAmount = computed(() => (subtotal.value * 0.1).toFixed(2));
+const finalTotal = computed(() => (subtotal.value - discount.value).toFixed(2));
+const changeAmount = computed(() => {
+  const paid = parseFloat(eftpos.value || 0) + parseFloat(cash.value || 0);
+  return paid > parseFloat(finalTotal.value)
+    ? (paid - parseFloat(finalTotal.value)).toFixed(2)
+    : "0.00";
+});
 
-// Select a customer
-const selectCustomer = (customer) => {
-  selectedCustomer.value = customer;
-  searchQuery.value = ""; // Clear search input
-};
-
-// Remove selected customer
-const clearCustomer = () => {
-  selectedCustomer.value = null;
-};
-
+// Lifecycle
 onMounted(() => {
   categoryStore.fetchCategories();
   productStore.fetchProducts();
   customerStore.fetchCustomers();
 });
 
-const paymentMethod = ref(null);
+// Cart operations
+const addToCart = (product) => {
+  const existing = cart.value.find((i) => i.id === product.id);
+  if (existing) existing.quantity++;
+  else cart.value.push({ ...product, quantity: 1 });
+};
+const removeFromCart = (idx) => cart.value.splice(idx, 1);
 
-const createSales = async (payment) => {
-  if (cart.value.length === 0) {
-    alert("Cart is empty!");
-    return;
-  }
-  paymentMethod.value = payment;
+// Customer operations
+const selectCustomer = (c) => {
+  selectedCustomer.value = c;
+  searchQuery.value = "";
+};
+const clearCustomer = () => (selectedCustomer.value = null);
 
-  // if (!paymentMethod.value) {
-  //   alert("Please select a payment method.");
-  //   return;
-  // }
-
+// API call
+const createSales = async (method) => {
   const saleData = {
-    customer_id: selectedCustomer.value ? selectedCustomer.value.id : null,
+    customer_id: selectedCustomer.value?.id || null,
     items: cart.value.map((item) => ({
       product_id: item.id,
       quantity: item.quantity,
       price: item.selling_price,
     })),
-    subtotal: subtotal.value,
+    subtotal: subtotal.value.toString(),
     gst: gstAmount.value,
     discount: discount.value,
     total: finalTotal.value,
-    payment_method: paymentMethod.value, // 'cash' or 'bank'
+    payment_method: method,
     date: new Date().toISOString(),
   };
+  const res = await fetch("http://127.0.0.1:8000/api/sales", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(saleData),
+  });
+  if (!res.ok) throw new Error("Failed to process sale");
+};
 
+// Confirm with loader
+const confirmSale = async (method) => {
+  loading.value = true;
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(saleData),
-    });
-
-    if (!response.ok) throw new Error("Failed to process sale");
-
-    alert("Sale processed successfully!");
-    cart.value = []; // Clear cart after sale
-    selectedCustomer.value = null; // Reset customer selection
-    paymentMethod.value = null; // Reset payment method
-    toggleModal(); // Close modal
-  } catch (error) {
-    console.error("Error processing sale:", error);
+    await createSales(method);
+    success.value = true;
+    // clear cart and customer
+    cart.value = [];
+    selectedCustomer.value = null;
+  } catch (err) {
+    console.error(err);
     alert("Error processing sale. Please try again.");
+  } finally {
+    loading.value = false;
   }
 };
 
-
-const openRepairModal = ref(false);
-
-const toggleRepairModal = (value) => {
-  openRepairModal.value = value;
+// Reset modal state
+const resetForm = () => {
+  discount.value = 0;
+  eftpos.value = "";
+  cash.value = "";
+  loading.value = false;
+  success.value = false;
 };
+
+// Receipt actions
+const printReceipt = () => window.print();
+const newSale = () => resetForm();
 </script>
 
 <template>
   <div class="mt-14 relative">
     <div class="flex min-h-[calc(100vh-60px)]">
-      <!-- Left Section: Shopping Cart -->
-      <div
-        class="relative w-1/2 border-r border-gray-200 bg-gray-100 px-4 py-8 flex flex-col justify-between">
+      <!-- Left: Cart -->
+      <div class="w-1/2 border-r bg-gray-100 p-8 flex flex-col justify-between">
+        <!-- Customer Search -->
         <div>
-          <!-- Search Customer -->
-          <div class="mb-4 flex gap-4">
-            <div class="w-full relative">
-              <input
-                type="text"
-                v-model="searchQuery"
-                @input="searchCustomers"
-                class="input-field"
-                placeholder="Search Customer Name..." />
-              <ul
-                v-if="filteredCustomers.length"
-                class="mt-2 absolute top-10 z-50 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg">
-                <li
-                  v-for="customer in filteredCustomers"
-                  :key="customer.id"
-                  @click="selectCustomer(customer)"
-                  class="p-2 hover:bg-gray-100 cursor-pointer">
-                  {{ customer.name }} - {{ customer.phone }}
-                </li>
-              </ul>
-            </div>
-
-            <button
-              type="button"
-              class="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 cursor-pointer w-max">
-              +
-            </button>
+          <div class="mb-4 relative">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search Customer Name..."
+              class="input-field w-full" />
+            <ul
+              v-if="filteredCustomers.length"
+              class="absolute top-10 z-50 w-full bg-gray-50 border border-gray-300 rounded-lg">
+              <li
+                v-for="c in filteredCustomers"
+                :key="c.id"
+                @click="selectCustomer(c)"
+                class="p-2 hover:bg-gray-100 cursor-pointer">
+                {{ c.name }} – {{ c.phone }}
+              </li>
+            </ul>
           </div>
-
-          <!-- Selected Customer Details -->
           <div
             v-if="selectedCustomer"
-            class="relative p-4 bg-stone-100 rounded mb-4 flex justify-between items-center">
+            class="mb-4 p-4 bg-stone-100 rounded flex justify-between items-center">
             <div>
               <p class="font-semibold text-sm">
                 Customer: {{ selectedCustomer.name }}
               </p>
               <p class="text-sm font-semibold">
-                Phone Number: {{ selectedCustomer.phone }}
+                Phone: {{ selectedCustomer.phone }}
               </p>
             </div>
-
             <button
               @click="clearCustomer"
-              class="text-red-500 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="size-5">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M6 18 18 6M6 6l12 12" />
-              </svg>
+              class="text-red-500">
+              &times;
             </button>
           </div>
 
-          <table
-            class="relative table-fixed w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead
-              class="w-full text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-              <tr class="">
-                <th class="w-[10%] px-6 py-3 text-center">Qty</th>
-                <th
-                  scope="col"
-                  class="w-[35%] px-6 py-3">
-                  Product
-                </th>
-
-                <th
-                  scope="col"
-                  class="w-[15%] px-6 py-3">
-                  Price
-                </th>
-                <th
-                  scope="col"
-                  class="w-[15%] px-6 py-3">
-                  Tax
-                </th>
-                <th
-                  scope="col"
-                  class="w-[15%] px-6 py-3">
-                  Total
-                </th>
-                <th
-                  scope="col"
-                  class="w-[10%] px-2 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(item, index) in cart"
-                :key="index"
-                class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200 text-sm">
-                <td
-                  class="px-6 py-4 font-medium text-gray-900 dark:text-white text-center">
-                  <input
-                  type="number"
-                  v-model="item.quantity"
-                  class="w-12 border p-1 text-center"
-                  min="1" />
-                  <!-- {{ item.quantity }} -->
-                </td>
-                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  <span class="line-clamp-1">{{ item.name }}</span>
-                </td>
-
-                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  ${{ item.selling_price }}
-                </td>
-                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  ${{ item.selling_price * 0.1 }}
-                </td>
-                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  ${{ item.selling_price * item.quantity }}
-                </td>
-                <td class="px-2 py-4 font-medium text-gray-900 dark:text-white">
+          <Table>
+            <TableHeader>
+              <TableRow class="bg-white">
+                <TableHead class="text-left"> Qty </TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>GST</TableHead>
+                <TableHead class="text-right"> Total </TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="(item, i) in cart"
+                :key="i">
+                <TableCell class="font-medium">
+                  <input type="number" min="1" :value="item.quantity" class="w-10 text-center">
+                </TableCell>
+                <TableCell>{{ item.name }}</TableCell>
+                <TableCell>{{ item.selling_price }}</TableCell>
+                <TableCell>{{ (item.selling_price * 0.1).toFixed(2) }}</TableCell>
+                <TableCell class="text-right">{{ (item.selling_price * item.quantity).toFixed(2) }}</TableCell>
+                <TableCell>
                   <button
-                    @click="removeFromCart(index)"
+                    @click="removeFromCart(i)"
                     class="text-red-500">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      class="size-5">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
+                    &times;
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
+
+        <!-- Totals -->
         <div>
           <div
-            class="mt-4 w-full border-gray-100 rounded-sm bg-white px-6 py-4 mb-4 pt-4 flex flex-col">
-            <h3 class="text-sm font-semibold flex justify-between">
-              <span>Discount: </span>
-              <span>{{ discount ? `${discount}` : "$0.00" }}</span>
+            class="bg-white px-6 py-4 mb-4 rounded-md shadow border border-gray-100 flex flex-col gap-2">
+            <h3
+              class="flex justify-between items-center text-sm font-semibold mb-1">
+              <span>Subtotal:</span>
+              <span>
+                $
+                <input
+                  type="number"
+                  v-model.number="subtotal"
+                  class="w-20 text-right border p-1 border-gray-200"
+              /></span>
             </h3>
-            <h3 class="text-sm font-semibold flex justify-between">
-              <span>Subtotal: </span> <span>${{ subtotal }}</span>
+            <h3 class="flex justify-between items-center text-sm font-semibold">
+              <span>Discount:</span>
+              <span>
+                $
+                <input
+                  type="number"
+                  v-model.number="discount"
+                  class="w-20 text-right border p-1 border-gray-200" />
+              </span>
             </h3>
-            <h3 class="text-sm font-semibold flex justify-between">
-              <span>Tax: </span> <span>${{ gstAmount }}</span>
+            <h3 class="flex justify-between items-center text-sm font-semibold">
+              <span>GST (10%):</span>
+              <span
+                >$
+                <input
+                  type="number"
+                  v-model.number="gstAmount"
+                  class="w-20 text-right border p-1 border-gray-200"
+                  disabled />
+              </span>
             </h3>
           </div>
+
           <div
             class="bg-white shadow-sm py-4 px-6 rounded-sm border border-gray-100">
-            <h3 class="text-lg font-semibold flex justify-between">
-              <span>Total: </span> <span>${{ finalTotal }}</span>
+            <h3 class="flex items-center justify-between text-lg font-semibold">
+              <span>Total ($):</span>
+              <span>
+                <input
+                  type="number"
+                  v-model.number="finalTotal"
+                  class="min-w-20 max-w-32 text-right p-1"
+                  disabled
+              /></span>
             </h3>
           </div>
         </div>
       </div>
 
-      <!-- Right Section: Categories & Products -->
+      <!-- Right: Products & Actions -->
       <div class="w-1/2 py-8 px-8 flex flex-col justify-between">
-        <div>
-          <PosView @addToCart="addToCart" />
-        </div>
-
+        <PosView @addToCart="addToCart" />
         <div class="grid grid-cols-3 gap-6">
-          <button
-            class="global-btn">
-            View Tickets
-          </button>
-          <button
-            class="global-btn">
-            View Invoices
-          </button>
+          <button class="global-btn">View Tickets</button>
+          <button class="global-btn">View Invoices</button>
           <NuxtLink
             to="/repairs/create"
             target="_blank"
-            class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-blue-500 hover:bg-blue-600 text-white">
+            class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 bg-blue-500 hover:bg-blue-600 text-white text-center font-semibold shadow-xs transition duration-500">
             Create Ticket
           </NuxtLink>
           <button
-            class="py-6 px-6 bg-gray-100 text-lg rounded-lg border border-solid border-gray-100 text-gray-700 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 hover:bg-blue-600 hover:text-white">
+            class="py-6 px-6 text-lg font-semibold bg-gray-100 text-gray-700 rounded-lg border transition duration-500 hover:bg-blue-600 hover:text-white">
             More Actions
           </button>
           <button
-            class="py-6 px-6 text-lg rounded-lg border border-solid border-red-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-red-200 hover:bg-red-600 text-red-600 hover:text-white"
-            :class="cart.length < 1 ? 'opacity-50' : ''"
-            :disabled="cart.length < 1"
-            @click="toggleModal">
+            @click="resetForm"
+            class="py-6 px-6 text-lg font-semibold bg-red-200 text-red-600 rounded-lg border border-red-200 transition duration-500 hover:bg-red-600 hover:text-white">
             Cancel
           </button>
-
           <AlertDialog>
             <AlertDialogTrigger as-child>
               <button
-                class="py-6 px-6 text-lg rounded-lg border border-solid border-blue-200 cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 bg-green-500 hover:bg-green-600 text-white"
-                :class="cart.length < 1 ? 'opacity-50' : ''"
-                :disabled="cart.length < 1"
-                @click="toggleModal">
+                class="py-6 px-6 text-lg font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg border border-blue-200 shadow-xs transition duration-500"
+                :disabled="cart.length < 1">
                 Checkout
               </button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Sales Checkout</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <div class="flex flex-col gap-2 items-center align-middle">
-                    <h4 class="text-xl font-semibold text-black uppercase">
-                      Amount
-                    </h4>
-                    <h2 class="text-5xl font-semibold text-green-500">
-                      ${{ finalTotal }}
-                    </h2>
-                  </div>
-                  <div>
-                    <div class="flex flex-col gap-4">
-                      <div class="flex flex-col gap-2">
-                        <label
-                          for=""
-                          class="font-semibold"
-                          >Eftpos</label
-                        >
-                        <div class="flex-1">
-                          <input
-                            type="text"
-                            placeholder="Enter Amount"
-                            class="input-field" />
-                        </div>
-                      </div>
-                      <div class="flex flex-col gap-2">
-                        <label
-                          for=""
-                          class="font-semibold"
-                          >Cash</label
-                        >
-                        <div class="flex-1">
-                          <input
-                            type="text"
-                            placeholder="Enter Amount"
-                            class="input-field" />
-                        </div>
-                      </div>
-                      <div class="flex flex-col gap-2">
-                        <label
-                          for=""
-                          class="font-semibold"
-                          >Change</label
-                        >
-                        <div class="flex-1">
-                          <input
-                            type="text"
-                            placeholder="Return Amount"
-                            class="input-field" />
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-                </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel @click="resetForm">Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  @click="() => createSales('bank')"
-                  class="primary-btn"
-                  >Confirm</AlertDialogAction
-                >
+
+              <!-- Form vs Success -->
+              <AlertDialogDescription v-if="!success">
+                <div class="flex flex-col items-center gap-2">
+                  <h4 class="text-xl font-semibold uppercase text-black">
+                    Amount
+                  </h4>
+                  <h2 class="text-5xl font-semibold text-green-500">
+                    ${{ finalTotal }}
+                  </h2>
+                </div>
+                <div class="mt-4 space-y-4">
+                  <div class="flex flex-col gap-2">
+                    <label class="font-semibold">Eftpos</label>
+                    <input
+                      v-model="eftpos"
+                      type="number"
+                      placeholder="Enter Amount"
+                      class="input-field w-full" />
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <label class="font-semibold">Cash</label>
+                    <input
+                      v-model="cash"
+                      type="number"
+                      placeholder="Enter Amount"
+                      class="input-field w-full" />
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <label class="font-semibold">Change</label>
+                    <input
+                      :value="changeAmount"
+                      readonly
+                      placeholder="Return Amount"
+                      class="input-field w-full" />
+                  </div>
+                </div>
+              </AlertDialogDescription>
+
+              <AlertDialogDescription
+                v-else
+                class="flex flex-col items-center py-6 gap-4">
+                <svg
+                  class="w-16 h-16 text-green-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 10-1.414-1.414L9 10.586 7.707 9.293a1 1 0 10-1.414 1.414L9 13.414l4.707-4.707z"
+                    clip-rule="evenodd" />
+                </svg>
+                <h3 class="text-2xl font-semibold">Payment Successful!</h3>
+              </AlertDialogDescription>
+
+              <AlertDialogFooter class="space-x-4">
+                <template v-if="!success">
+                  <AlertDialogCancel @click="resetForm"
+                    >Cancel</AlertDialogCancel
+                  >
+                  <AlertDialogAction
+                    @click="confirmSale('bank')"
+                    :disabled="loading"
+                    class="primary-btn flex items-center justify-center">
+                    <span
+                      v-if="loading"
+                      class="loader mr-2"></span>
+                    <span>{{ loading ? "Processing…" : "Confirm" }}</span>
+                  </AlertDialogAction>
+                </template>
+                <template v-else>
+                  <button
+                    @click="printReceipt"
+                    class="py-3 px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                    Print Receipt
+                  </button>
+                  <button
+                    @click="newSale"
+                    class="py-3 px-6 border border-gray-300 rounded-lg hover:bg-gray-100 font-semibold">
+                    New Sale
+                  </button>
+                </template>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
       </div>
     </div>
-
   </div>
 </template>
+
+<style scoped>
+.loader {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

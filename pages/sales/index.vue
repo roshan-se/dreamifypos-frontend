@@ -1,5 +1,4 @@
 <script setup>
-import SuppliersTable from "~/components/shared/SuppliersTable.vue";
 
 const openModal = ref(false);
 const salesStore = useSalesStore();

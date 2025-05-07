@@ -23,16 +23,16 @@ import RecentPurchaseTable from "~/components/shared/RecentPurchaseTable.vue";
 // State management
 const showCreateForm = ref(false);
 const purchases = ref([]);
-const supplier_id = ref("");
+
 const skuInput = ref("");
 
 const productStore = useProductStore();
-const supplierStore = useSupplierStore();
+
 const purchaseStore = usePurchaseStore();
 
 onMounted(() => {
   productStore.fetchProducts();
-  supplierStore.fetchSuppliers();
+
   purchaseStore.fetchPurchases();
 
   console.log(purchaseStore.purchases);
@@ -79,7 +79,6 @@ const removeProduct = (index) => {
 
 const createPurchase = async () => {
   const res = await purchaseStore.addPurchase({
-    supplier_id: supplier_id.value,
     products: purchases.value,
   });
 
@@ -89,7 +88,6 @@ const createPurchase = async () => {
     errors.value = Object.values(res.errors)[0][0];
   } else {
     toggleForm();
-    supplier_id.value = "";
     purchases.value = [];
 
     useToastify("Pruchase created successfully!", {

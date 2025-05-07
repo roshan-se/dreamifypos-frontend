@@ -1,5 +1,7 @@
 <script setup>
+import { reactive, ref, onBeforeUnmount } from 'vue'
 import ProductsTable from "~/components/shared/ProductsTable.vue";
+import { Input } from "@/components/ui/input";
 
 const props = defineProps({
   currentCategory: Object,
@@ -12,7 +14,7 @@ const emit = defineEmits();
 //const openModal = ref(false);
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
-const supplierStore = useSupplierStore();
+
 const variationStore = useVariationStore();
 const errors = ref("");
 
@@ -21,27 +23,46 @@ const productFormData = reactive({
   sku: "",
   barcode: "",
   category_id: null,
-  supplier_id: null,
+  
   purchase_price: null,
   selling_price: null,
   stock_quantity: null,
   stock_alert_threshold: 5,
   variation_id: null,
   status: "active",
+  image: null
 });
 
-// const toggleModal = () => {
-//   openModal.value = !openModal.value;
-// };
+const imagePreview = ref(null)
 
-// If there's an editProduct, populate the form with its data
+// when file input changes
+function onFileChange(event) {
+  const file = event.target.files?.[0]
+  if (!file) {
+    // user cleared the selection
+    productFormData.image = null
+    imagePreview.value = null
+    return
+  }
+  productFormData.image = file
+  imagePreview.value = URL.createObjectURL(file)
+}
+
+// clean up the object URL when component unmounts
+onBeforeUnmount(() => {
+  if (imagePreview.value) {
+    URL.revokeObjectURL(imagePreview.value)
+  }
+})
+
+
 watchEffect(() => {
   if (props.editProduct) {
     productFormData.name = props.editProduct.name;
     productFormData.sku = props.editProduct.sku;
     productFormData.barcode = props.editProduct.barcode;
     productFormData.category_id = props.editProduct.category_id;
-    productFormData.supplier_id = props.editProduct.supplier_id;
+    
     productFormData.purchase_price = props.editProduct.purchase_price;
     productFormData.selling_price = props.editProduct.selling_price;
     productFormData.stock_quantity = props.editProduct.stock_quantity;
@@ -103,7 +124,7 @@ const resetForm = () => {
   productFormData.sku = "";
   productFormData.barcode = "";
   productFormData.category_id = null;
-  productFormData.supplier_id = null;
+
   productFormData.variation_id = null;
   productFormData.purchase_price = null;
   productFormData.selling_price = null;
@@ -120,7 +141,7 @@ const closeModal = () => {
 onMounted(() => {
   categoryStore.fetchCategories();
   productStore.fetchProducts();
-  supplierStore.fetchSuppliers();
+  
   variationStore.fetchVariations();
 });
 </script>
@@ -179,6 +200,23 @@ onMounted(() => {
                 editProduct ? handleUpdateProduct() : handleCreateProduct()
               ">
               <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                  <label
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Product Image
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    @change="onFileChange"
+                    class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" />
+                  <!-- preview -->
+                  <img
+                    v-if="imagePreview"
+                    :src="imagePreview"
+                    alt="Image preview"
+                    class="mt-2 h-20 w-20 object-cover rounded" />
+                </div>
                 <div class="col-span-2">
                   <label
                     class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -242,24 +280,6 @@ onMounted(() => {
                     placeholder="Enter SKU">
                     {{ currentCategory.name }}
                   </div>
-                </div>
-
-                <div class="col-span-1">
-                  <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Supplier</label
-                  >
-                  <select
-                    v-model="productFormData.supplier_id"
-                    class="input-field">
-                    <option value="">Select supplier (optional)</option>
-                    <option
-                      v-for="supplier in supplierStore.suppliers"
-                      :key="supplier.id"
-                      :value="supplier.id">
-                      {{ supplier.name }}
-                    </option>
-                  </select>
                 </div>
 
                 <div class="col-span-1">
