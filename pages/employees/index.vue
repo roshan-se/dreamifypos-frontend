@@ -1,217 +1,228 @@
 <script setup>
+import { ref, reactive } from "vue";
 import EmployeeTable from "~/components/shared/EmployeeTable.vue";
-
-definePageMeta({
-  layout: "default",
-});
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 const employeeStore = useEmployeeStore();
 
+// modal open state
 const openModal = ref(false);
+// create vs edit
+const isEditMode = ref(false);
+// if editing, which employee id
+const currentEmployeeId = ref(null);
+
+// shared form data
 const employeeFormData = reactive({
   name: "",
   phone: "",
   email: "",
+  role: "",
+  pin_code: "",
   password: "",
   password_confirmation: "",
-  role: "",
-  pin_code: ""
 });
 
-const toggleModal = () => {
-  openModal.value = !openModal.value;
+// open in “create” mode
+const openCreateDialog = () => {
+  isEditMode.value = false;
+  currentEmployeeId.value = null;
+  Object.assign(employeeFormData, {
+    name: "",
+    phone: "",
+    email: "",
+    role: "",
+    pin_code: "",
+    password: "",
+    password_confirmation: "",
+  });
+  openModal.value = true;
 };
 
-const handleCreateEmployee = async () => {
+// open in “edit” mode
+const handleEditEmployee = (emp) => {
+  isEditMode.value = true;
+  currentEmployeeId.value = emp.id;
+  Object.assign(employeeFormData, {
+    name: emp.name,
+    phone: emp.phone,
+    email: emp.email,
+    role: emp.role,
+    pin_code: emp.pin_code,
+    // we won’t prefill passwords
+    password: "",
+    password_confirmation: "",
+  });
+  openModal.value = true;
+};
+
+// create or update on submit
+const handleSubmit = async () => {
   if (employeeFormData.password !== employeeFormData.password_confirmation) {
-    useToastify("Passwords does match!", {
+    useToastify("Passwords don't match!", {
       autoClose: 3000,
       position: ToastifyOption.POSITION.TOP_RIGHT,
       type: "error",
     });
-    return
-  } else {
-    const res = await employeeStore.addEmployee(employeeFormData);
+    return;
+  }
 
-    if (res.errors) {
-      console.log("Check", res.message);
-      console.log("Checking response in form", Object.values(res.errors)[0][0]);
-      errors.value = Object.values(res.errors)[0][0];
-    } else {
-      openModal.value = false;
-      employeeFormData.name = "";
-      employeeFormData.email = "";
-      employeeFormData.phone = "";
-      employeeFormData.role = "";
-      employeeFormData.pin_code = "";
-      employeeFormData.password = "";
-      employeeFormData.password_confirmation = "";
-      useToastify("Employee Account created!", {
-        autoClose: 3000,
-        position: ToastifyOption.POSITION.TOP_RIGHT,
-        type: "success",
-      });
-      employeeStore.fetchEmployees();
-    }
+  // 2️⃣ Build a shallow copy of the form data
+  const payload = { ...employeeFormData }
+
+  if (isEditMode.value) {
+    // Remove pin_code, password and confirmation entirely
+    delete payload.pin_code
+    delete payload.password
+    delete payload.password_confirmation
+  }
+
+  // 3️⃣ Call the correct store action
+  let res
+  if (isEditMode.value) {
+    res = await employeeStore.updateEmployee(currentEmployeeId.value, payload)
+  } else {
+    res = await employeeStore.addEmployee(payload)
+  }
+
+  // 4️⃣ Handle the response
+  if (res.errors) {
+    const msg = Object.values(res.errors)[0][0]
+    useToastify(msg, { type: 'error', position: 'top-right', autoClose: 3000 })
+  } else {
+    useToastify(
+      isEditMode.value ? "Employee updated!" : "Employee created!",
+      { type: 'success', position: 'top-right', autoClose: 3000 }
+    )
+    openModal.value = false
+    employeeStore.fetchEmployees()
   }
 };
 </script>
 
 <template>
-  <div
-    class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-xl font-semibold uppercase">Employees</h1>
+  <div class="p-4 border-2 border-dashed rounded-lg mt-14">
+    <AlertDialog
+      :open="openModal"
+      @open-change="openModal = $event">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-semibold uppercase">Employees</h1>
+        <!-- Add / Edit trigger -->
+        <AlertDialogTrigger asChild>
+          <button
+            @click="openCreateDialog"
+            class="primary-btn">
+            Add Employee
+          </button>
+        </AlertDialogTrigger>
+      </div>
+      <!-- table emits edit requests -->
+      <EmployeeTable @edit-employee="handleEditEmployee" />
 
-      <button
-        @click="toggleModal"
-        class="primary-btn">
-        Add Employee
-      </button>
-    </div>
-
-    <EmployeeTable />
-
-    <!-- Modal to Create Customer  -->
-    <div
-      v-if="openModal"
-      class="overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center content-center w-full md:inset-0 h-full max-h-full bg-black/70">
-      <div class="relative p-4 w-full max-w-2xl m-auto">
-        <!-- Modal content -->
-        <div class="relative bg-white rounded-lg shadow-sm dark:bg-gray-700">
-          <!-- Modal header -->
-          <div
-            class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-              Add New Employee
-            </h3>
-            <button
-              @click="toggleModal"
-              type="button"
-              class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
-              <svg
-                class="w-3 h-3"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 14 14">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-              </svg>
-              <span class="sr-only">Close modal</span>
-            </button>
-          </div>
-          <!-- Modal body -->
-          <div class="p-4 md:p-5">
+      <!-- shared modal content -->
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {{ isEditMode ? "Edit Employee" : "Add New Employee" }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             <form
-              class="space-y-4"
-              @submit.prevent="handleCreateEmployee">
+              @submit.prevent="handleSubmit"
+              class="space-y-4 p-4 md:p-5">
               <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-1">
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Employee Name</label
-                  >
+                <!-- Name -->
+                <div class="col-span-2">
+                  <label class="block mb-2 text-sm font-medium">Name</label>
                   <input
-                    type="text"
                     v-model="employeeFormData.name"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="" />
+                    required
+                    class="input-field" />
                 </div>
-                <div class="col-span-1">
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Pin Code</label
-                  >
+                <!-- Pin Code -->
+                <div v-if="!isEditMode">
+                  <label class="block mb-2 text-sm font-medium">Pin Code</label>
                   <input
-                    type="text"
                     v-model="employeeFormData.pin_code"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="" />
+                    required
+                    class="input-field" />
                 </div>
+                <!-- Role -->
                 <div>
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Role</label
-                  >
+                  <label class="block mb-2 text-sm font-medium">Role</label>
                   <select
                     v-model="employeeFormData.role"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white">
+                    required
+                    class="input-field">
                     <option
-                      value=""
-                      disabled>
-                      Select Employee Role
+                      disabled
+                      value="">
+                      Select Role
                     </option>
                     <option value="admin">Admin</option>
                     <option value="employee">Employee</option>
                   </select>
                 </div>
+                <!-- Phone -->
                 <div>
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Phone Number</label
-                  >
+                  <label class="block mb-2 text-sm font-medium">Phone</label>
                   <input
-                    type="text"
                     v-model="employeeFormData.phone"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="" />
+                    required
+                    class="input-field" />
                 </div>
-                <div class="col-span-2">
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Email</label
-                  >
+                <!-- Email -->
+                <div :class="[isEditMode ? 'col-span-2' : 'col-span-1']">
+                  <label class="block mb-2 text-sm font-medium">Email</label>
                   <input
-                    type="text"
                     v-model="employeeFormData.email"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="" />
+                    required
+                    class="input-field" />
                 </div>
-                <div>
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Password</label
-                  >
+                <!-- Password -->
+                <div v-if="!isEditMode">
+                  <label class="block mb-2 text-sm font-medium">Password</label>
                   <input
-                    type="text"
+                    type="password"
                     v-model="employeeFormData.password"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="" />
+                    :required="!isEditMode"
+                    class="input-field" />
                 </div>
-                <div>
-                  <label
-                    for=""
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                <!-- Confirm Password -->
+                <div v-if="!isEditMode">
+                  <label class="block mb-2 text-sm font-medium"
                     >Confirm Password</label
                   >
                   <input
                     type="password"
                     v-model="employeeFormData.password_confirmation"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="" />
+                    :required="!isEditMode"
+                    class="input-field" />
                 </div>
               </div>
-
-              <button
-                type="submit"
-                class="primary-btn w-full">
-                Create
-              </button>
             </form>
-          </div>
-        </div>
-      </div>
-    </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="openModal = false"
+            >Cancel</AlertDialogCancel
+          >
+          <AlertDialogAction
+            @click="handleSubmit"
+            class="primary-btn">
+            {{ isEditMode ? "Update" : "Create" }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

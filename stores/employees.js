@@ -44,11 +44,30 @@ export const useEmployeeStore = defineStore("employee", () => {
     }
   };
 
+  const updateEmployee = async (employeeId, updatedData) => {
+    try {
+      const response = await $fetch(`${baseURL}/users/${employeeId}`, {
+        method: "PATCH", // Use "PUT" if replacing the entire resource
+        body: updatedData,
+      });
+  
+      return response;
+    } catch (err) {
+      console.error("Error updating category:", err);
+  
+      if (err.response && err.response._data) {
+        return err.response._data;
+      }
+  
+      return { error: "An unexpected error occurred. Please try again." };
+    }
+  };
+
   return {
     employees,
     fetchEmployees,
     addEmployee,
-    // updateCustomer,
+    updateEmployee,
     deleteEmployee,
   };
 });

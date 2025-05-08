@@ -2,6 +2,14 @@
 import { ref } from "vue";
 import ProductsTable from "./ProductsTable.vue";
 
+// pull in Nuxt’s runtime config
+const config = useRuntimeConfig()
+
+// now you can reference your .env var
+const imageBase = config.public.imageBase
+
+
+console.log("api url", config.public)
 const categoryStore = useCategoryStore();
 
 onMounted(() => {
@@ -128,6 +136,7 @@ const confirmDelete = async (value) => {
         :key="product.id"
         class="border border-gray-200 rounded-sm flex flex-col justify-center items-center text-center shadow-lg cursor-pointer overflow-hidden py-2 px-2 2xl:px-2 hover:bg-green-400 w-full animate group text-black"
         @click="$emit('addToCart', product)">
+        <img :src="imageBase + '/' + product.image_url" alt="">
         <h3 class="text-sm font-medium line-clamp-3">
           {{ product.name }}
         </h3>

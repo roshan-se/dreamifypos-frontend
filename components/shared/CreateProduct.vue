@@ -1,7 +1,11 @@
 <script setup>
 import { reactive, ref, onBeforeUnmount } from 'vue'
-import ProductsTable from "~/components/shared/ProductsTable.vue";
-import { Input } from "@/components/ui/input";
+
+// pull in Nuxt’s runtime config
+const config = useRuntimeConfig()
+
+// now you can reference your .env var
+const imageBase = config.public.imageBase
 
 const props = defineProps({
   currentCategory: Object,
@@ -30,7 +34,7 @@ const productFormData = reactive({
   stock_alert_threshold: 5,
   variation_id: null,
   status: "active",
-  image: null
+  image_url: null
 });
 
 const imagePreview = ref(null)
@@ -40,11 +44,11 @@ function onFileChange(event) {
   const file = event.target.files?.[0]
   if (!file) {
     // user cleared the selection
-    productFormData.image = null
+    productFormData.image_url = null
     imagePreview.value = null
     return
   }
-  productFormData.image = file
+  productFormData.image_url = file
   imagePreview.value = URL.createObjectURL(file)
 }
 
@@ -58,6 +62,7 @@ onBeforeUnmount(() => {
 
 watchEffect(() => {
   if (props.editProduct) {
+    
     productFormData.name = props.editProduct.name;
     productFormData.sku = props.editProduct.sku;
     productFormData.barcode = props.editProduct.barcode;
@@ -69,6 +74,7 @@ watchEffect(() => {
     productFormData.stock_alert_threshold =
       props.editProduct.stock_alert_threshold;
     productFormData.status = props.editProduct.status;
+    productFormData.image_url = props.editProduct.image_url
   }
 });
 
@@ -131,6 +137,7 @@ const resetForm = () => {
   productFormData.stock_quantity = null;
   productFormData.stock_alert_threshold = 5;
   productFormData.status = "active";
+  productFormData.image_url = null
 };
 
 const closeModal = () => {
@@ -209,11 +216,11 @@ onMounted(() => {
                     type="file"
                     accept="image/*"
                     @change="onFileChange"
-                    class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" />
+                    class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 py-2 px-4" />
                   <!-- preview -->
                   <img
-                    v-if="imagePreview"
-                    :src="imagePreview"
+                    v-if="imagePreview || editProduct"
+                    :src="editProduct ? imageBase + productFormData.image_url : imagePreview"
                     alt="Image preview"
                     class="mt-2 h-20 w-20 object-cover rounded" />
                 </div>

@@ -1,4 +1,5 @@
 <script setup>
+import { ref, reactive } from 'vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,13 @@ definePageMeta({
 
 const customerStore = useCustomerStore();
 
+// controls modal visibility
+const openModal = ref(false)
+// are we editing, or creating?
+const isEditMode = ref(false)
+// which customer to update?
+const currentCustomerId = ref(null)
+
 const customerFormData = reactive({
   name: "",
   phone: "",
@@ -25,42 +33,57 @@ const customerFormData = reactive({
 });
 
 const resetForm = () => {
-  customerFormData.name = "";
-  customerFormData.email = "";
-  customerFormData.phone = "";
-};
+  customerFormData.name = ''
+  customerFormData.phone = ''
+  customerFormData.email = ''
+  currentCustomerId.value = null
+  isEditMode.value = false
+  openModal.value = false
+}
 
-const handleCreateCustomer = async () => {
-  const res = await customerStore.addCustomer(customerFormData);
+const openCreateDialog = () => {
+  resetForm()
+  openModal.value = true
+}
 
-  if (res.errors) {
-    console.log("Check", res.message);
-    console.log("Checking response in form", Object.values(res.errors)[0][0]);
-    errors.value = Object.values(res.errors)[0][0];
+const handleEditCustomer = (customer) => {
+  console.log("checking customers", customer)
+  isEditMode.value = true
+  currentCustomerId.value = customer.id
+  customerFormData.name = customer.name
+  customerFormData.phone = customer.phone
+  customerFormData.email = customer.email
+  openModal.value = true
+}
+
+const handleSubmit = async () => {
+  if (isEditMode.value) {
+    // update
+    const res = await customerStore.updateCustomer(currentCustomerId.value, customerFormData)
+    if (!res.errors) {
+      useToastify('Customer updated!', { type: 'success', position: 'top-right' })
+    }
   } else {
-    openModal.value = false;
-    customerFormData.name = "";
-    customerFormData.email = "";
-    customerFormData.phone = "";
-    useToastify("Customer added successfully!", {
-      autoClose: 3000,
-      position: ToastifyOption.POSITION.TOP_RIGHT,
-      type: "success",
-    });
-    customerStore.fetchCustomers();
+    // create
+    const res = await customerStore.addCustomer(customerFormData)
+    if (!res.errors) {
+      useToastify('Customer added!', { type: 'success', position: 'top-right' })
+    }
   }
-};
+  openModal.value = false
+  customerStore.fetchCustomers()
+}
 </script>
 
 <template>
   <div
     class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
-    <AlertDialog>
+    <AlertDialog :open="openModal" @open-change="openModal = $event">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-xl font-semibold uppercase">Customers</h1>
 
         <AlertDialogTrigger>
-          <div class="primary-btn">Add Customer</div>
+          <button @click="openCreateDialog" class="primary-btn">Add Customer</button>
         </AlertDialogTrigger>
       </div>
       <form class="flex items-center w-full mb-8">
@@ -95,70 +118,43 @@ const handleCreateCustomer = async () => {
         </div>
       </form>
 
-      <CustomersTable />
+      <CustomersTable @edit-customer="handleEditCustomer" />
 
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>New Variation</AlertDialogTitle>
+          <AlertDialogTitle>
+            {{ isEditMode ? 'Edit Customer' : 'New Customer' }}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            <div class="p-4 md:p-5">
-              <div
-                v-if="errors"
-                class="italic text-sm text-red-600 mb-2">
-                {{ errors }}
+            <form class="space-y-4 p-4 md:p-5" @submit.prevent="handleSubmit">
+              <div v-if="customerStore.errors" class="text-red-600 italic text-sm">
+                {{ customerStore.errors }}
               </div>
-              <form
-                class="space-y-4"
-                autocomplete="off">
-                <div class="grid grid-cols-2 gap-4">
-                  <div class="col-span-2">
-                    <label
-                      for=""
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >Customer Name</label
-                    >
-                    <input
-                      type="text"
-                      v-model="customerFormData.name"
-                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      autocomplete="off" />
-                  </div>
-                  <div>
-                    <label
-                      for=""
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >Phone Number</label
-                    >
-                    <input
-                      type="text"
-                      v-model="customerFormData.phone"
-                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      autocomplete="off" />
-                  </div>
-                  <div>
-                    <label
-                      for=""
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >Email</label
-                    >
-                    <input
-                      type="text"
-                      v-model="customerFormData.email"
-                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      autocomplete="off" />
-                  </div>
+              <div class="grid grid-cols-2 gap-4">
+                <!-- name -->
+                <div class="col-span-2">
+                  <label class="block mb-2 text-sm font-medium">Name</label>
+                  <input v-model="customerFormData.name" required class="input-field" />
                 </div>
-              </form>
-            </div>
+                <!-- phone -->
+                <div>
+                  <label class="block mb-2 text-sm font-medium">Phone</label>
+                  <input v-model="customerFormData.phone" required class="input-field" />
+                </div>
+                <!-- email -->
+                <div>
+                  <label class="block mb-2 text-sm font-medium">Email</label>
+                  <input v-model="customerFormData.email" required class="input-field" />
+                </div>
+              </div>
+            </form>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel @click="resetForm">Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            @click="handleCreateCustomer"
-            class="primary-btn"
-            >Create</AlertDialogAction
-          >
+          <AlertDialogAction @click="handleSubmit" class="primary-btn">
+            {{ isEditMode ? 'Update' : 'Create' }}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -17,6 +17,25 @@ export const useCustomerStore = defineStore("customer", () => {
     }
   };
 
+  const updateCustomer = async (customerId, updatedData) => {
+    try {
+      const response = await $fetch(`${baseURL}/customers/${customerId}`, {
+        method: "PATCH", // Use "PUT" if replacing the entire resource
+        body: updatedData,
+      });
+  
+      return response;
+    } catch (err) {
+      console.error("Error updating category:", err);
+  
+      if (err.response && err.response._data) {
+        return err.response._data;
+      }
+  
+      return { error: "An unexpected error occurred. Please try again." };
+    }
+  };
+
   const addCustomer = async(customerData) => {
     try {
       const response = await $fetch(baseURL + "/customers", {
@@ -48,7 +67,7 @@ export const useCustomerStore = defineStore("customer", () => {
     customers,
     fetchCustomers,
     addCustomer,
-    // updateCustomer,
+    updateCustomer,
     deleteCustomer,
   };
 });
