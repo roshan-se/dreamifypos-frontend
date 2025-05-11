@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import CreateRepair from "~/components/shared/CreateRepair.vue";
 import PosView from "~/components/shared/PosView.vue";
 import {
   AlertDialog,
@@ -13,8 +12,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-
-import { Input } from '@/components/ui/input'
 
 import {
   Table,
@@ -41,10 +38,28 @@ const selectedCustomer = ref(null);
 const discount = ref(0);
 
 // Payment & checkout state
-const eftpos = ref("");
-const cash = ref("");
+const eftpos = ref(0);
+const cash = ref(0);
 const loading = ref(false);
 const success = ref(false);
+
+const gstRate = 0.1;
+
+const discountInput = reactive({});
+
+// called when the user clicks “Add Discount”
+const addDiscount = (itemId) => {
+  const perUnit = parseFloat(discountInput[itemId] || 0);
+  const item = cart.value.find((i) => i.id === itemId);
+  if (!item) return;
+
+  // total discount = perUnit * quantity
+  item.discount = perUnit * item.quantity;
+  item.total_price = item.selling_price * item.quantity - item.discount;
+
+  // clear the draft, or close the dialog…
+  discountInput[itemId] = 0;
+};
 
 // Computed values
 const filteredCustomers = computed(() => {
@@ -53,17 +68,47 @@ const filteredCustomers = computed(() => {
     c.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
+
 const subtotal = computed(() =>
-  cart.value.reduce((sum, item) => sum + item.selling_price * item.quantity, 0)
+  cart.value.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2)
 );
-const gstAmount = computed(() => (subtotal.value * 0.1).toFixed(2));
-const finalTotal = computed(() => (subtotal.value - discount.value).toFixed(2));
+
+const totalDisc = computed(() =>
+  cart.value
+    .reduce((sum, i) => sum + (i.discount || 0) * i.quantity, 0)
+    .toFixed(2)
+);
+const totalTax = computed(() =>
+  cart.value.reduce((sum, item) => sum + item.tax, 0).toFixed(2)
+);
+
+// And if you want a grand total (incl‐tax minus discounts):
+const grandTotal = computed(() =>
+  cart.value.reduce((sum, item) => sum + item.total_price, 0)
+);
+
 const changeAmount = computed(() => {
   const paid = parseFloat(eftpos.value || 0) + parseFloat(cash.value || 0);
-  return paid > parseFloat(finalTotal.value)
-    ? (paid - parseFloat(finalTotal.value)).toFixed(2)
+  return paid > parseFloat(grandTotal.value)
+    ? (paid - parseFloat(grandTotal.value)).toFixed(2)
     : "0.00";
 });
+
+watch(
+  cart,
+  (newCart) => {
+    newCart.forEach((item) => {
+      const gross = item.selling_price * item.quantity;
+      // extract the GST portion from an inclusive‐tax price
+      item.tax = parseFloat((gross * gstRate).toFixed(2));
+      // you can still compute subtotal and total_price as before…
+      item.subtotal = parseFloat(gross.toFixed(2));
+      const discountTotal = (item.discount || 0) * item.quantity;
+      item.total_price = parseFloat((gross - discountTotal).toFixed(2));
+    });
+  },
+  { deep: true }
+);
 
 // Lifecycle
 onMounted(() => {
@@ -75,8 +120,28 @@ onMounted(() => {
 // Cart operations
 const addToCart = (product) => {
   const existing = cart.value.find((i) => i.id === product.id);
-  if (existing) existing.quantity++;
-  else cart.value.push({ ...product, quantity: 1 });
+  if (existing) {
+    // increment and recalc
+    existing.quantity++;
+    existing.subtotal = existing.quantity * existing.selling_price;
+    // tax is already included in price, so if you want to show it separately:
+    existing.tax = existing.subtotal * gstRate;
+    existing.total_price = +(existing.subtotal - existing.discount).toFixed(2);
+  } else {
+    // push all the fields your table & API expect
+    console.log("Checking gst value", product.selling_price * 1 * 0.1);
+    cart.value.push({
+      id: product.id,
+      name: product.name,
+      selling_price: product.selling_price,
+      quantity: 1,
+      discount: 0,
+      // if you prefer default tax = 0 and handle later, just leave it 0
+      tax: product.selling_price * 1 * gstRate,
+      subtotal: product.selling_price * 1,
+      total_price: product.selling_price * 1,
+    });
+  }
 };
 const removeFromCart = (idx) => cart.value.splice(idx, 1);
 
@@ -95,14 +160,23 @@ const createSales = async (method) => {
       product_id: item.id,
       quantity: item.quantity,
       price: item.selling_price,
+      subtotal: item.subtotal,
+      discount: item.discount,
+      tax: item.tax,
+      total_price: item.total_price,
     })),
-    subtotal: subtotal.value.toString(),
-    gst: gstAmount.value,
-    discount: discount.value,
-    total: finalTotal.value,
+    // unwrap the computed refs here
+    subtotal: subtotal.value,
+    gst: totalTax.value,
+    discount: totalDisc.value,
+    total: grandTotal.value,
     payment_method: method,
+    bank_amount: eftpos.value,
+    cash_amount: cash.value,
+    change_amount: changeAmount.value,
     date: new Date().toISOString(),
   };
+
   const res = await fetch("http://127.0.0.1:8000/api/sales", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -201,12 +275,54 @@ const newSale = () => resetForm();
                 v-for="(item, i) in cart"
                 :key="i">
                 <TableCell class="font-medium">
-                  <input type="number" min="1" :value="item.quantity" class="w-10 text-center">
+                  <input
+                    type="number"
+                    min="1"
+                    :value="item.quantity"
+                    class="w-10 text-center" />
                 </TableCell>
                 <TableCell>{{ item.name }}</TableCell>
-                <TableCell>{{ item.selling_price }}</TableCell>
-                <TableCell>{{ (item.selling_price * 0.1).toFixed(2) }}</TableCell>
-                <TableCell class="text-right">{{ (item.selling_price * item.quantity).toFixed(2) }}</TableCell>
+                <TableCell>
+                  <div>
+                    <span>${{ item.selling_price }}</span> <span></span>
+                  </div>
+
+                  <AlertDialog
+                    ><AlertDialogTrigger asChild>
+                      <button
+                        class="text-xs text-blue-400 cursor-pointer hover:underline">
+                        {{
+                          item.discount
+                            ? "Discount - $" + item.discount
+                            : "Add Discount"
+                        }}
+                      </button></AlertDialogTrigger
+                    >
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle> Discount </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          <input
+                            type="text"
+                            class="input-field"
+                            min="0"
+                            v-model="item.discount"
+                            placeholder="Enter discount amount..." />
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction class="primary-btn">
+                          Apply
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
+                <TableCell>${{ item.tax.toFixed(2) }}</TableCell>
+                <TableCell class="text-right"
+                  >${{ item.total_price.toFixed(2) }}</TableCell
+                >
                 <TableCell>
                   <button
                     @click="removeFromCart(i)"
@@ -240,7 +356,7 @@ const newSale = () => resetForm();
                 $
                 <input
                   type="number"
-                  v-model.number="discount"
+                  v-model.number="totalDisc"
                   class="w-20 text-right border p-1 border-gray-200" />
               </span>
             </h3>
@@ -250,7 +366,7 @@ const newSale = () => resetForm();
                 >$
                 <input
                   type="number"
-                  v-model.number="gstAmount"
+                  v-model.number="totalTax"
                   class="w-20 text-right border p-1 border-gray-200"
                   disabled />
               </span>
@@ -264,7 +380,7 @@ const newSale = () => resetForm();
               <span>
                 <input
                   type="number"
-                  v-model.number="finalTotal"
+                  v-model.number="grandTotal"
                   class="min-w-20 max-w-32 text-right p-1"
                   disabled
               /></span>
@@ -314,7 +430,7 @@ const newSale = () => resetForm();
                     Amount
                   </h4>
                   <h2 class="text-5xl font-semibold text-green-500">
-                    ${{ finalTotal }}
+                    ${{ grandTotal }}
                   </h2>
                 </div>
                 <div class="mt-4 space-y-4">
