@@ -1,6 +1,9 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 const router = useRouter();
 const productStore = useProductStore();
 const customerStore = useCustomerStore();
@@ -134,7 +137,7 @@ async function handleCreateRepair() {
 const fetchSubcategoriesAndProducts = async (category) => {
   try {
     const response = await $fetch(
-      `http://127.0.0.1:8000/api/child-categories/${category.id}`
+      baseURL + `/child-categories/${category.id}`
     );
     const data = await response;
 

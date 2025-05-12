@@ -1,10 +1,11 @@
 import { defineStore } from "pinia";
 
-const baseURL = "http://127.0.0.1:8000/api";
-const token =
+export const useRepairStore = defineStore("repair", () => {
+  const runtimeConfig = useRuntimeConfig();
+  const baseURL = runtimeConfig.public.apiBase;
+  const token =
   typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
-export const useRepairStore = defineStore("repair", () => {
   const repairs = ref([]);
 
   const repair = ref(null);

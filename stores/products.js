@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 
-const baseURL = "http://127.0.0.1:8000/api";
 
 export const useProductStore = defineStore("product", () => {
+  const runtimeConfig = useRuntimeConfig();
+  const baseURL = runtimeConfig.public.apiBase;
   const products = ref([]);
 
   const fetchProducts = async () => {
@@ -82,7 +83,7 @@ export const useProductStore = defineStore("product", () => {
       }
 
       // 2️⃣ Send it as PATCH (Laravel supports multipart PATCH)
-      const url = `http://127.0.0.1:8000/api/products/${productId}`
+      const url = baseURL + `/products/${productId}`
       const response = await axios.post(url, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

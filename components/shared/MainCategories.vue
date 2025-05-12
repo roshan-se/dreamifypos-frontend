@@ -7,6 +7,9 @@ defineProps({
   categories: Array,
 });
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 const categoryStore = useCategoryStore();
 
 const currentCategory = ref(null);
@@ -30,7 +33,7 @@ const toggleModal = (value) => {
 const fetchSubcategoriesAndProducts = async (category) => {
   try {
     const response = await $fetch(
-      `http://127.0.0.1:8000/api/child-categories/${category.id}`
+      baseURL + `/child-categories/${category.id}`
     );
     const data = await response;
 

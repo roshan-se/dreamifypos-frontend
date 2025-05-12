@@ -4,6 +4,9 @@ import RecentTransaction from "~/components/dashboard/RecentTransaction.vue";
 import TopSellingProduct from "~/components/dashboard/TopSellingProduct.vue";
 import RepairsTable from "~/components/tables/RepairsTable.vue";
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 const openModal = ref(false);
 const errors = ref("");
 
@@ -12,8 +15,6 @@ const dashboardData = ref(null);
 onMounted(() => {
   fetchDashboardData();
 });
-
-const baseURL = "http://127.0.0.1:8000/api";
 
 const fetchDashboardData = async () => {
   try {

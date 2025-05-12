@@ -2,11 +2,14 @@
 import { ref } from "vue";
 import ProductsTable from "./ProductsTable.vue";
 
+const runtimeConfig = useRuntimeConfig();
+  const baseURL = runtimeConfig.public.apiBase;
+
 // pull in Nuxt’s runtime config
 const config = useRuntimeConfig()
 
 // now you can reference your .env var
-const imageBase = config.public.imageBase
+const imageBase = runtimeConfig.public.imageBase
 
 
 console.log("api url", config.public)
@@ -25,7 +28,7 @@ const categoryHistory = ref([]); // To track breadcrumb navigation
 const fetchSubcategoriesAndProducts = async (category) => {
   try {
     const response = await $fetch(
-      `http://127.0.0.1:8000/api/child-categories/${category.id}`
+      baseURL + `/child-categories/${category.id}`
     );
     const data = await response;
 

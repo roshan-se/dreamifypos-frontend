@@ -1,12 +1,11 @@
 import { defineStore } from "pinia";
 
-const baseURL = "http://127.0.0.1:8000/api";
-
 export const useVariationStore = defineStore("variation", () => {
+  const runtimeConfig = useRuntimeConfig();
+  const baseURL = runtimeConfig.public.apiBase;
   const variations = ref([]);
 
   const fetchVariations = async () => {
-    console.log("reached api call");
     try {
       const response = await $fetch(baseURL + "/variations");
       console.log(response);

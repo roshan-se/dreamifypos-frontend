@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from "vue";
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 defineProps({
   openModal: Boolean,
 });
@@ -28,7 +31,7 @@ watch(selectedUser, (newUserId) => {
 
 const validatePin = async () => {
   try {
-    const response = await $fetch("http://127.0.0.1:8000/api/validate-pin", {
+    const response = await $fetch( baseUrl + "/validate-pin", {
       method: "POST",
       body: {
         employee_id: selectedUser.value,
@@ -54,7 +57,7 @@ const validatePin = async () => {
 
 const handleClockIn = async() => {
   try {
-    const response = await $fetch("http://127.0.0.1:8000/api/clock-in", {
+    const response = await $fetch( baseUrl + "/clock-in", {
       method: "POST",
       body: {
         employee_id: selectedUser.value,
@@ -78,7 +81,7 @@ const handleClockIn = async() => {
 
 const handleClockOut = async() => {
   try {
-    const response = await $fetch("http://127.0.0.1:8000/api/clock-out", {
+    const response = await $fetch(baseUrl + "/clock-out", {
       method: "POST",
       body: {
         employee_id: selectedUser.value,

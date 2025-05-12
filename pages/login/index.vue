@@ -3,6 +3,9 @@ definePageMeta({
   layout: "auth",
 });
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 const email = ref("");
 const password = ref("");
 const error = ref("");
@@ -14,7 +17,7 @@ const handleSubmit = async () => {
 
   try {
     const { data, error: fetchError } = await useFetch(
-      "http://127.0.0.1:8000/api/login",
+      baseURL + "/login",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

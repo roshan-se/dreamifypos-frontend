@@ -15,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 const router = useRouter();
 
 const activeDrop = ref(false);
@@ -30,8 +33,7 @@ const toggleModal = () => {
 };
 
 const logout = async () => {
-  const baseURL = "http://127.0.0.1:8000/api";
-  
+
   try {
     const token = localStorage.getItem('token');
 

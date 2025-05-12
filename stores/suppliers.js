@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 
-const baseURL = "http://127.0.0.1:8000/api";
-
 export const useSupplierStore = defineStore("supplier", () => {
+  const runtimeConfig = useRuntimeConfig();
+  const baseURL = runtimeConfig.public.apiBase;
   const suppliers = ref([]);
 
   const fetchSuppliers = async () => {

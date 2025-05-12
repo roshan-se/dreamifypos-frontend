@@ -25,6 +25,9 @@ import {
 
 definePageMeta({ layout: "pos-layout" });
 
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 // Stores
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
@@ -177,7 +180,7 @@ const createSales = async (method) => {
     date: new Date().toISOString(),
   };
 
-  const res = await fetch("http://127.0.0.1:8000/api/sales", {
+  const res = await fetch(baseURL + "/sales", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(saleData),
