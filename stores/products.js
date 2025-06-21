@@ -1,11 +1,20 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 
-
 export const useProductStore = defineStore("product", () => {
   const runtimeConfig = useRuntimeConfig();
   const baseURL = runtimeConfig.public.apiBase;
   const products = ref([]);
+  const lowStock = ref([]);
+
+  const fetchLowStockProducts = async () => {
+    try {
+      const res = await axios.get(baseURL + "/products/low-stock");
+      lowStock.value = res.data.data;
+    } catch (error) {
+      console.error("Error fetching low stock products:", error);
+    }
+  };
 
   const fetchProducts = async () => {
     console.log("reached api call");
@@ -60,7 +69,7 @@ export const useProductStore = defineStore("product", () => {
       // 1️⃣ Build a FormData payload
       const formData = new FormData();
 
-      formData.append('_method', 'PUT')
+      formData.append("_method", "PUT");
       formData.append("name", productData.name);
       if (productData.sku) formData.append("sku", productData.sku);
       if (productData.barcode) formData.append("barcode", productData.barcode);
@@ -78,24 +87,23 @@ export const useProductStore = defineStore("product", () => {
       // only append the file if it's a File object
       if (productData.image_url instanceof File) {
         console.log("Appending file:", productData.image_url);
-        console.log(productData.image_url)
+        console.log(productData.image_url);
         formData.append("image_url", productData.image_url);
       }
 
       // 2️⃣ Send it as PATCH (Laravel supports multipart PATCH)
-      const url = baseURL + `/products/${productId}`
+      const url = baseURL + `/products/${productId}`;
       const response = await axios.post(url, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json',
+          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
         },
-      })
+      });
 
-      return response.data
-
+      return response.data;
     } catch (err) {
-      console.error('Axios error:', err.response || err)
-    return err.response?.data || { error: 'Unknown error' }
+      console.error("Axios error:", err.response || err);
+      return err.response?.data || { error: "Unknown error" };
     }
   };
 
@@ -114,9 +122,11 @@ export const useProductStore = defineStore("product", () => {
 
   return {
     products,
+    lowStock,
     fetchProducts,
     addProduct,
     updateProduct,
     deleteProduct,
+    fetchLowStockProducts
   };
 });

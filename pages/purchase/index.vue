@@ -11,16 +11,62 @@
       </NuxtLink>
     </div>
 
+    <ul
+      class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400 mb-6">
+      <li class="me-2">
+        <button
+          @click="toggleTab('low-stock')"
+          :class="[
+            'inline-block p-4 rounded-t-lg cursor-pointer animate',
+            activeTab == 'low-stock'
+              ? 'text-blue-600 bg-gray-100'
+              : 'hover:text-gray-600 hover:bg-gray-50',
+          ]">
+          Low Stock
+        </button>
+      </li>
+      <li class="me-2">
+        <button
+          @click="toggleTab('new-purchase')"
+          :class="[
+            'inline-block p-4 rounded-t-lg cursor-pointer animate',
+            activeTab == 'new-purchase'
+              ? 'text-blue-600 bg-gray-100'
+              : 'hover:text-gray-600 hover:bg-gray-50',
+          ]">
+          New Purchase
+        </button>
+      </li>
+      <li class="me-2">
+        <button
+          @click="toggleTab('recent-purchase')"
+          :class="[
+            'inline-block p-4 rounded-t-lg cursor-pointer animate',
+            activeTab == 'recent-purchase'
+              ? 'text-blue-600 bg-gray-100'
+              : 'hover:text-gray-600 hover:bg-gray-50',
+          ]">
+          Recent Purchase
+        </button>
+      </li>
+    </ul>
+
     <!-- Table of recent purchases -->
     <div v-if="!showCreateForm">
       <RecentPurchaseTable />
     </div>
+
+    <LowStockTable />
+
   </div>
 </template>
 
 <script setup>
-import RecentPurchaseTable from "~/components/shared/RecentPurchaseTable.vue";
+import RecentPurchaseTable from "~/components/dashboard/purchase/RecentPurchaseTable.vue";
+import LowStockTable from "~/components/dashboard/purchase/LowStockTable.vue";
 // State management
+
+const activeTab = ref("low-stock");
 const showCreateForm = ref(false);
 const purchases = ref([]);
 
@@ -29,6 +75,10 @@ const skuInput = ref("");
 const productStore = useProductStore();
 
 const purchaseStore = usePurchaseStore();
+
+const toggleTab = (tab) => {
+  activeTab.value = tab;
+};
 
 onMounted(() => {
   productStore.fetchProducts();
