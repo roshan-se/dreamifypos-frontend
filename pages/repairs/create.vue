@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
+import { Button } from "@/components/ui/button";
 
 const runtimeConfig = useRuntimeConfig();
 const baseURL = runtimeConfig.public.apiBase;
@@ -14,6 +15,8 @@ const categoryStore = useCategoryStore();
 const errors = ref("");
 const cart = ref([]);
 const searchQuery = ref("");
+
+const selectedCustomer = ref(null);
 
 const repairFormData = reactive({
   customer_id: null,
@@ -74,11 +77,13 @@ const filteredCustomers = computed(() => {
 function selectCustomer(customer) {
   repairFormData.customer_id = customer.id;
   searchQuery.value = customer.name;
+  selectedCustomer.value = customer;
 }
 
 function clearCustomer() {
   repairFormData.customer_id = null;
   searchQuery.value = "";
+  selectedCustomer.value = null;
 }
 
 function addToCart(product) {
@@ -136,9 +141,7 @@ async function handleCreateRepair() {
 
 const fetchSubcategoriesAndProducts = async (category) => {
   try {
-    const response = await $fetch(
-      baseURL + `/child-categories/${category.id}`
-    );
+    const response = await $fetch(baseURL + `/child-categories/${category.id}`);
     const data = await response;
 
     // Update state
@@ -178,31 +181,54 @@ onMounted(() => {
     <div class="grid grid-cols-12 gap-6">
       <!-- Left Panel -->
       <div class="col-span-5 space-y-4">
-        <!-- Customer Search -->
-        <div>
-          <input
-            type="text"
-            v-model="searchQuery"
-            class="input-field w-full"
-            placeholder="Search Customer..." />
-          <ul
-            v-if="filteredCustomers.length"
-            class="border mt-1 bg-white">
-            <li
-              v-for="c in filteredCustomers"
-              :key="c.id"
-              @click="selectCustomer(c)"
-              class="p-2 hover:bg-gray-100 cursor-pointer">
-              {{ c.name }} • {{ c.phone }}
-            </li>
-          </ul>
+        <div class="w-full">
+          <!-- Customer Search -->
+          <div class="flex items-center gap-2">
+            <div class="relative w-full">
+              <!-- Search Input -->
+              <input
+                type="text"
+                v-model="searchQuery"
+                placeholder="Search customer..."
+                class="w-full text-sm border rounded px-4 py-2 disabled:opacity-75 disabled:bg-gray-200"
+                :disabled="selectedCustomer" />
+
+              <!-- Floating Result Box -->
+              <div
+                v-if="filteredCustomers.length && selectedCustomer == null"
+                class="absolute z-50 mt-1 w-full bg-white border rounded shadow-md max-h-60 overflow-auto">
+                <ul>
+                  <li
+                    v-for="customer in filteredCustomers"
+                    :key="customer.id"
+                    @click="selectCustomer(customer)"
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">
+                    {{ customer.name }} • {{ customer.phone }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <Button class="h-full flex flex-col">+</Button>
+          </div>
         </div>
-        <button
-          v-if="repairFormData.customer_id"
-          @click="clearCustomer"
-          class="text-sm text-blue-600 underline">
-          Change Customer
-        </button>
+
+        <div v-if="selectedCustomer">
+          <div class="p-6 shadow-md rounded-md flex justify-between">
+            <div>
+              <h3 class="text-xl font-bold">{{ selectedCustomer.name }}</h3>
+              <p class="text-xs text-green-500">
+                Phone Number: {{ selectedCustomer.phone }}
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              v-if="repairFormData.customer_id"
+              @click="clearCustomer"
+              class="cursor-pointer">
+              Clear
+            </Button>
+          </div>
+        </div>
 
         <!-- Assign Technician -->
         <div>
@@ -319,7 +345,11 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Right Panel: Products & Cart -->
+      <!-- 
+      ----------------------------
+      Right Panel: Products & Cart
+      ----------------------------
+      -->
       <div class="col-span-7">
         <h2 class="font-semibold mb-4">Select Repair Items</h2>
         <div

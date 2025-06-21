@@ -1,238 +1,23 @@
-<template>
-  <div class="p-4 border rounded-lg mt-14">
-    <div class="flex justify-between mb-6">
-      <h1 class="text-xl font-semibold">Edit Repair</h1>
-      <router-link
-        to="/repairs"
-        class="text-red-500"
-        >Cancel</router-link
-      >
-    </div>
-    <div class="grid grid-cols-12 gap-6">
-      <!-- Left Panel: Form -->
-      <div class="col-span-5 space-y-4">
-        <!-- Customer Search -->
-        <div>
-          <input
-            v-model="searchQuery"
-            type="text"
-            class="input-field w-full"
-            placeholder="Search Customer..." />
-          <ul
-            v-if="filteredCustomers.length"
-            class="border mt-1 bg-white">
-            <li
-              v-for="c in filteredCustomers"
-              :key="c.id"
-              @click="selectCustomer(c)"
-              class="p-2 hover:bg-gray-100 cursor-pointer">
-              {{ c.name }} • {{ c.phone }}
-            </li>
-          </ul>
-        </div>
-        <button
-          v-if="repairFormData.customer_id"
-          @click="clearCustomer"
-          class="text-sm text-blue-600 underline">
-          Change Customer
-        </button>
-
-        <!-- Assign Technician -->
-        <div>
-          <label class="block mb-1">Assign Technician</label>
-          <select
-            v-model="repairFormData.assigned_to"
-            class="input-field w-full">
-            <option
-              disabled
-              value="">
-              Select Technician...
-            </option>
-            <option
-              v-for="e in employeeStore.employees"
-              :key="e.id"
-              :value="e.id">
-              {{ e.name }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Status & Payment -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block mb-1">Status</label>
-            <select
-              v-model="repairFormData.status"
-              class="input-field w-full">
-              <option value="pending">Pending</option>
-              <option value="waiting">Waiting for parts</option>
-              <option value="arrived">Parts Arrived</option>
-              <option value="completed">Completed</option>
-              <option value="collected">Collected</option>
-            </select>
-          </div>
-          <div>
-            <label class="block mb-1">Payment Status</label>
-            <select
-              v-model="repairFormData.payment_status"
-              class="input-field w-full">
-              <option
-                disabled
-                value="">
-                Select...
-              </option>
-              <option value="pending_payment">Pending Payment</option>
-              <option value="deposit_paid">Deposit Paid</option>
-              <option value="fully_paid">Full Paid</option>
-              <option value="not_paid">Not Paid</option>
-            </select>
-          </div>
-        </div>
-        <div v-if="repairFormData.payment_status === 'deposit_paid'">
-          <label class="block mb-1">Deposit Amount</label>
-          <input
-            type="number"
-            v-model.number="repairFormData.deposit_amount"
-            class="input-field w-full"
-            placeholder="0.00" />
-        </div>
-
-        <!-- Device Details -->
-        <div>
-          <label class="block mb-1">Device Model</label>
-          <input
-            type="text"
-            v-model="repairFormData.device_model"
-            class="input-field w-full"
-            placeholder="e.g. iPhone 12" />
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block mb-1">IMEI / Serial</label>
-            <input
-              type="text"
-              v-model="repairFormData.imei"
-              class="input-field w-full" />
-          </div>
-          <div>
-            <label class="block mb-1">Passcode</label>
-            <input
-              type="text"
-              v-model="repairFormData.passcode"
-              class="input-field w-full" />
-          </div>
-        </div>
-
-        <!-- Description & Total -->
-        <div>
-          <label class="block mb-1">Description</label>
-          <textarea
-            v-model="repairFormData.description"
-            class="input-field w-full"
-            rows="3"></textarea>
-        </div>
-        <div>
-          <label class="block mb-1">Total Cost</label>
-          <input
-            type="text"
-            :value="`$${repairFormData.total_cost.toFixed(2)}`"
-            class="input-field w-full"
-            disabled />
-        </div>
-
-        <button
-          @click="handleUpdateRepair"
-          class="primary-btn w-full">
-          Save Changes
-        </button>
-        <div
-          v-if="errors"
-          class="mt-4 text-red-600">
-          {{ errors }}
-        </div>
-      </div>
-
-      <!-- Right Panel: Products & Cart -->
-      <div class="col-span-7">
-        <h2 class="font-semibold mb-4">Select Repair Items</h2>
-        <div class="grid grid-cols-5 gap-2 mb-6">
-          <div
-            v-for="prod in products"
-            :key="prod.id"
-            @click="addToCart(prod)"
-            class="border p-4 cursor-pointer hover:bg-green-200">
-            <div class="truncate">{{ prod.name }}</div>
-            <div class="font-bold mt-1">${{ prod.selling_price }}</div>
-          </div>
-        </div>
-        <div
-          v-if="cart.length"
-          class="mt-6">
-          <h3 class="font-semibold mb-2">Selected Items</h3>
-          <ul class="space-y-2">
-            <li
-              v-for="(item, index) in cart"
-              :key="item.id"
-              class="flex flex-col border p-2 rounded">
-              <div class="flex justify-between items-center">
-                <span
-                  >{{ index + 1 }}. {{ item.name }} x{{ item.quantity }}</span
-                >
-                <button
-                  @click="removeFromCart(index)"
-                  class="text-red-500 text-sm hover:underline">
-                  Remove
-                </button>
-              </div>
-              <div class="flex items-center gap-4 mt-1">
-                <label class="text-sm">Discount:</label>
-                <input
-                  type="number"
-                  v-model.number="cart[index].discount"
-                  class="input-field w-24"
-                  min="0"
-                  placeholder="0.00" />
-                <span class="text-sm">
-                  Line Total: ${{
-                    (
-                      item.selling_price * item.quantity -
-                      item.discount
-                    ).toFixed(2)
-                  }}
-                </span>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
 
-const router = useRouter();
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
 const route = useRoute();
+const router = useRouter();
 const id = route.params.id;
 
-const productStore = useProductStore();
 const customerStore = useCustomerStore();
-const repairStore = useRepairStore();
+const productStore = useProductStore();
 const employeeStore = useEmployeeStore();
+const repairStore = useRepairStore();
+const categoryStore = useCategoryStore();
 
 const errors = ref("");
-const cart = ref([]);
 const searchQuery = ref("");
-
-const products = computed(() => productStore.products || []);
-const filteredCustomers = computed(() => {
-  if (!searchQuery.value) return [];
-  return customerStore.customers.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
+const selectedCustomer = ref(null);
+const cart = ref([]);
 
 const repairFormData = reactive({
   customer_id: null,
@@ -248,6 +33,13 @@ const repairFormData = reactive({
   repair_items: [],
 });
 
+// Category navigation states
+const currentCategory = ref(null);
+const childCategories = ref([]);
+const products = ref([]);
+const categoryHistory = ref([]);
+
+// Watch for cart change to update total cost
 watch(
   cart,
   (newCart) => {
@@ -259,34 +51,87 @@ watch(
   { deep: true }
 );
 
-function selectCustomer(c) {
-  repairFormData.customer_id = c.id;
-  searchQuery.value = c.name;
-}
-function clearCustomer() {
-  repairFormData.customer_id = null;
-  searchQuery.value = "";
-}
-function addToCart(p) {
-  const existing = cart.value.find((i) => i.id === p.id);
-  if (existing) existing.quantity++;
-  else cart.value.push({ ...p, quantity: 1, discount: 0 });
-}
-function removeFromCart(i) {
-  cart.value.splice(i, 1);
+// Computed for customer search
+const filteredCustomers = computed(() => {
+  if (!searchQuery.value) return [];
+  return customerStore.customers.filter((c) =>
+    `${c.name} ${c.phone}`.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+// Category logic
+const fetchSubcategoriesAndProducts = async (category) => {
+  try {
+    const response = await $fetch(baseURL + `/child-categories/${category.id}`);
+    const data = await response;
+
+    // Update state
+    childCategories.value = data.subcategories;
+    products.value = data.products;
+
+    // Prevent duplicate entries in history
+    if (!categoryHistory.value.some((c) => c.id === category.id)) {
+      categoryHistory.value.push(category);
+    }
+
+    currentCategory.value = category;
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+};
+
+const goBack = () => {
+  if (categoryHistory.value.length > 1) {
+    categoryHistory.value.pop();
+    const previous = categoryHistory.value[categoryHistory.value.length - 1];
+    fetchSubcategoriesAndProducts(previous);
+  } else {
+    resetView();
+  }
+};
+
+const resetView = () => {
+  currentCategory.value = null;
+  childCategories.value = [];
+  products.value = [];
+  categoryHistory.value = [];
+};
+
+// Customer selection
+function selectCustomer(customer) {
+  repairFormData.customer_id = customer.id;
+  selectedCustomer.value = customer;
+  searchQuery.value = customer.name;
 }
 
+function clearCustomer() {
+  repairFormData.customer_id = null;
+  selectedCustomer.value = null;
+  searchQuery.value = "";
+}
+
+// Cart logic
+function addToCart(product) {
+  const existing = cart.value.find((i) => i.id === product.id);
+  if (existing) {
+    existing.quantity++;
+  } else {
+    cart.value.push({ ...product, quantity: 1, discount: 0 });
+  }
+}
+
+function removeFromCart(index) {
+  cart.value.splice(index, 1);
+}
+
+// Submit update
 async function handleUpdateRepair() {
-  errors.value = "";
   if (!repairFormData.customer_id) {
     errors.value = "Please select a customer.";
-    useToastify(errors.value, {
-      autoClose: 3000,
-      position: ToastifyOption.POSITION.TOP_RIGHT,
-      type: "success",
-    });
+    useToastify(errors.value, { type: "error" });
     return;
   }
+
   repairFormData.repair_items = cart.value.map((it) => ({
     product_id: it.id,
     quantity: it.quantity,
@@ -298,35 +143,32 @@ async function handleUpdateRepair() {
   }));
 
   const res = await repairStore.updateRepair(id, { ...repairFormData });
+
   if (res.errors) {
     errors.value = Object.values(res.errors)[0][0];
-    useToastify(errors.value, {
-      autoClose: 3000,
-      position: ToastifyOption.POSITION.TOP_RIGHT,
-      type: "success",
-    });
+    useToastify(errors.value, { type: "error" });
   } else {
-    useToastify("Repair updated successfully!", {
-      autoClose: 3000,
-      position: ToastifyOption.POSITION.TOP_RIGHT,
-      type: "success",
-    });
+    useToastify("Repair updated successfully!", { type: "success" });
     router.push("/repairs");
   }
 }
 
+// Initial load
 async function loadData() {
   await Promise.all([
     customerStore.fetchCustomers(),
     productStore.fetchProducts(),
     employeeStore.fetchEmployees(),
+    categoryStore.fetchCategories(),
+    categoryStore.fetchParentCategories(),
   ]);
-  const response = await repairStore.fetchRepair(id);
-  console.log("checking ", response);
-  const r = response.data || response.data?.data;
+
+  const res = await repairStore.fetchRepair(id);
+  const r = res.data || res.data?.data;
+
   repairFormData.customer_id = r.customer_id;
-  searchQuery.value =
-    customerStore.customers.find((c) => c.id === r.customer_id)?.name || "";
+  selectedCustomer.value = customerStore.customers.find((c) => c.id === r.customer_id);
+  searchQuery.value = selectedCustomer.value?.name || "";
   repairFormData.device_model = r.device_model;
   repairFormData.imei = r.imei;
   repairFormData.passcode = r.passcode;
@@ -335,6 +177,7 @@ async function loadData() {
   repairFormData.payment_status = r.payment_status;
   repairFormData.deposit_amount = r.deposit_amount || 0;
   repairFormData.assigned_to = r.assigned_to;
+
   cart.value = r.items.map((i) => ({
     id: i.product_id,
     name: i.product.name,
@@ -346,3 +189,191 @@ async function loadData() {
 
 onMounted(loadData);
 </script>
+
+<template>
+  <div class="p-4 border rounded-lg mt-14">
+    <div class="flex justify-between mb-6">
+      <h1 class="text-xl font-semibold">Edit Repair</h1>
+      <router-link to="/repairs" class="text-red-500">Cancel</router-link>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+      <!-- LEFT PANEL -->
+      <div class="col-span-5 space-y-4">
+        <!-- Customer Search -->
+        <div class="flex items-center gap-2">
+          <div class="relative w-full">
+            <input
+              type="text"
+              v-model="searchQuery"
+              placeholder="Search customer..."
+              class="w-full border rounded px-4 py-2 text-sm disabled:bg-gray-100"
+              :disabled="selectedCustomer" />
+            <div
+              v-if="filteredCustomers.length && !selectedCustomer"
+              class="absolute z-50 mt-1 w-full bg-white border rounded shadow-md max-h-60 overflow-auto">
+              <ul>
+                <li
+                  v-for="customer in filteredCustomers"
+                  :key="customer.id"
+                  @click="selectCustomer(customer)"
+                  class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">
+                  {{ customer.name }} • {{ customer.phone }}
+                </li>
+              </ul>
+            </div>
+          </div>
+          <button
+            v-if="selectedCustomer"
+            @click="clearCustomer"
+            class="text-sm text-blue-600 underline whitespace-nowrap">
+            Change
+          </button>
+        </div>
+
+        <!-- Selected Customer Card -->
+        <div v-if="selectedCustomer" class="p-4 bg-white rounded shadow">
+          <h3 class="text-base font-semibold">{{ selectedCustomer.name }}</h3>
+          <p class="text-sm text-gray-500">{{ selectedCustomer.phone }}</p>
+        </div>
+
+        <!-- Technician -->
+        <div>
+          <label class="block mb-1">Assign Technician</label>
+          <select v-model="repairFormData.assigned_to" class="input-field w-full">
+            <option disabled value="">Select Technician...</option>
+            <option v-for="e in employeeStore.employees" :key="e.id" :value="e.id">{{ e.name }}</option>
+          </select>
+        </div>
+
+        <!-- Status and Payment -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1">Status</label>
+            <select v-model="repairFormData.status" class="input-field w-full">
+              <option value="pending">Pending</option>
+              <option value="waiting">Waiting for parts</option>
+              <option value="arrived">Parts Arrived</option>
+              <option value="completed">Completed</option>
+              <option value="collected">Collected</option>
+            </select>
+          </div>
+          <div>
+            <label class="block mb-1">Payment Status</label>
+            <select v-model="repairFormData.payment_status" class="input-field w-full">
+              <option disabled value="">Select...</option>
+              <option value="pending_payment">Pending Payment</option>
+              <option value="deposit_paid">Deposit Paid</option>
+              <option value="fully_paid">Full Paid</option>
+              <option value="not_paid">Not Paid</option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="repairFormData.payment_status === 'deposit_paid'">
+          <label class="block mb-1">Deposit Amount</label>
+          <input type="number" v-model.number="repairFormData.deposit_amount" class="input-field w-full" />
+        </div>
+
+        <!-- Device Details -->
+        <div>
+          <label class="block mb-1">Device Model</label>
+          <input type="text" v-model="repairFormData.device_model" class="input-field w-full" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1">IMEI / Serial</label>
+            <input type="text" v-model="repairFormData.imei" class="input-field w-full" />
+          </div>
+          <div>
+            <label class="block mb-1">Passcode</label>
+            <input type="text" v-model="repairFormData.passcode" class="input-field w-full" />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block mb-1">Description</label>
+          <textarea v-model="repairFormData.description" class="input-field w-full" rows="3" />
+        </div>
+
+        <!-- Total Cost -->
+        <div>
+          <label class="block mb-1">Total Cost</label>
+          <input :value="`$${repairFormData.total_cost.toFixed(2)}`" disabled class="input-field w-full" />
+        </div>
+
+        <button @click="handleUpdateRepair" class="primary-btn w-full">Save Changes</button>
+        <div v-if="errors" class="text-red-600 mt-2">{{ errors }}</div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="col-span-7">
+        <h2 class="font-semibold mb-4">Select Repair Items</h2>
+
+        <!-- Category Breadcrumb -->
+        <div v-if="categoryHistory.length" class="mb-4">
+          <button @click="goBack" class="text-blue-600 hover:underline mr-2">← Back</button>
+          <span v-for="(cat, i) in categoryHistory" :key="cat.id">
+            <span v-if="i > 0"> / </span>
+            <span :class="i + 1 === categoryHistory.length ? 'text-green-600 font-semibold' : ''">
+              {{ cat.name }}
+            </span>
+          </span>
+        </div>
+
+        <!-- Category Grid -->
+        <div v-if="childCategories.length || !currentCategory" class="grid grid-cols-5 2xl:grid-cols-6 gap-2 pb-8">
+          <div
+            v-for="category in currentCategory ? childCategories : categoryStore.parentCategories"
+            :key="category.id"
+            @click="fetchSubcategoriesAndProducts(category)"
+            class="border border-gray-300 rounded-sm text-center cursor-pointer hover:bg-blue-100 py-3 px-2 text-sm font-medium truncate">
+            {{ category.name }}
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div v-if="products.length" class="grid grid-cols-5 gap-2 pb-8">
+          <div
+            v-for="product in products"
+            :key="product.id"
+            @click="addToCart(product)"
+            class="border p-2 rounded shadow hover:bg-green-400 cursor-pointer text-center">
+            <p class="text-sm font-semibold truncate">{{ product.name }}</p>
+            <p class="text-xs text-green-500 font-bold">${{ product.selling_price }}</p>
+          </div>
+        </div>
+
+        <!-- Cart -->
+        <div v-if="cart.length">
+          <h3 class="font-semibold mb-2">Selected Items</h3>
+          <ul class="space-y-2">
+            <li
+              v-for="(item, index) in cart"
+              :key="item.id"
+              class="border rounded p-2">
+              <div class="flex justify-between items-center">
+                <span>{{ index + 1 }}. {{ item.name }} x{{ item.quantity }}</span>
+                <button @click="removeFromCart(index)" class="text-red-500 text-sm hover:underline">Remove</button>
+              </div>
+              <div class="flex items-center gap-4 mt-1">
+                <label class="text-sm">Discount:</label>
+                <input
+                  type="number"
+                  v-model.number="item.discount"
+                  min="0"
+                  class="input-field w-24"
+                  placeholder="0.00" />
+                <span class="text-sm">
+                  Line Total: ${{ (item.selling_price * item.quantity - item.discount).toFixed(2) }}
+                </span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
