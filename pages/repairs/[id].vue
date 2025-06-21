@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
+import { Button } from "@/components/ui/button";
 
 const runtimeConfig = useRuntimeConfig();
 const baseURL = runtimeConfig.public.apiBase;
@@ -55,7 +56,9 @@ watch(
 const filteredCustomers = computed(() => {
   if (!searchQuery.value) return [];
   return customerStore.customers.filter((c) =>
-    `${c.name} ${c.phone}`.toLowerCase().includes(searchQuery.value.toLowerCase())
+    `${c.name} ${c.phone}`
+      .toLowerCase()
+      .includes(searchQuery.value.toLowerCase())
   );
 });
 
@@ -167,7 +170,9 @@ async function loadData() {
   const r = res.data || res.data?.data;
 
   repairFormData.customer_id = r.customer_id;
-  selectedCustomer.value = customerStore.customers.find((c) => c.id === r.customer_id);
+  selectedCustomer.value = customerStore.customers.find(
+    (c) => c.id === r.customer_id
+  );
   searchQuery.value = selectedCustomer.value?.name || "";
   repairFormData.device_model = r.device_model;
   repairFormData.imei = r.imei;
@@ -194,7 +199,11 @@ onMounted(loadData);
   <div class="p-4 border rounded-lg mt-14">
     <div class="flex justify-between mb-6">
       <h1 class="text-xl font-semibold">Edit Repair</h1>
-      <router-link to="/repairs" class="text-red-500">Cancel</router-link>
+      <router-link
+        to="/repairs"
+        class="text-red-500"
+        >Cancel</router-link
+      >
     </div>
 
     <div class="grid grid-cols-12 gap-6">
@@ -223,26 +232,45 @@ onMounted(loadData);
               </ul>
             </div>
           </div>
-          <button
-            v-if="selectedCustomer"
-            @click="clearCustomer"
-            class="text-sm text-blue-600 underline whitespace-nowrap">
-            Change
-          </button>
+          <Button class="h-full flex flex-col">+</Button>
         </div>
 
         <!-- Selected Customer Card -->
-        <div v-if="selectedCustomer" class="p-4 bg-white rounded shadow">
-          <h3 class="text-base font-semibold">{{ selectedCustomer.name }}</h3>
-          <p class="text-sm text-gray-500">{{ selectedCustomer.phone }}</p>
+        <div v-if="selectedCustomer">
+          <div class="p-6 shadow-md rounded-md flex justify-between">
+            <div>
+              <h3 class="text-xl font-bold">{{ selectedCustomer.name }}</h3>
+              <p class="text-xs text-green-500">
+                Phone Number: {{ selectedCustomer.phone }}
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              v-if="repairFormData.customer_id"
+              @click="clearCustomer"
+              class="cursor-pointer">
+              Clear
+            </Button>
+          </div>
         </div>
 
         <!-- Technician -->
         <div>
           <label class="block mb-1">Assign Technician</label>
-          <select v-model="repairFormData.assigned_to" class="input-field w-full">
-            <option disabled value="">Select Technician...</option>
-            <option v-for="e in employeeStore.employees" :key="e.id" :value="e.id">{{ e.name }}</option>
+          <select
+            v-model="repairFormData.assigned_to"
+            class="input-field w-full">
+            <option
+              disabled
+              value="">
+              Select Technician...
+            </option>
+            <option
+              v-for="e in employeeStore.employees"
+              :key="e.id"
+              :value="e.id">
+              {{ e.name }}
+            </option>
           </select>
         </div>
 
@@ -250,7 +278,9 @@ onMounted(loadData);
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block mb-1">Status</label>
-            <select v-model="repairFormData.status" class="input-field w-full">
+            <select
+              v-model="repairFormData.status"
+              class="input-field w-full">
               <option value="pending">Pending</option>
               <option value="waiting">Waiting for parts</option>
               <option value="arrived">Parts Arrived</option>
@@ -260,8 +290,14 @@ onMounted(loadData);
           </div>
           <div>
             <label class="block mb-1">Payment Status</label>
-            <select v-model="repairFormData.payment_status" class="input-field w-full">
-              <option disabled value="">Select...</option>
+            <select
+              v-model="repairFormData.payment_status"
+              class="input-field w-full">
+              <option
+                disabled
+                value="">
+                Select...
+              </option>
               <option value="pending_payment">Pending Payment</option>
               <option value="deposit_paid">Deposit Paid</option>
               <option value="fully_paid">Full Paid</option>
@@ -272,40 +308,66 @@ onMounted(loadData);
 
         <div v-if="repairFormData.payment_status === 'deposit_paid'">
           <label class="block mb-1">Deposit Amount</label>
-          <input type="number" v-model.number="repairFormData.deposit_amount" class="input-field w-full" />
+          <input
+            type="number"
+            v-model.number="repairFormData.deposit_amount"
+            class="input-field w-full" />
         </div>
 
         <!-- Device Details -->
         <div>
           <label class="block mb-1">Device Model</label>
-          <input type="text" v-model="repairFormData.device_model" class="input-field w-full" />
+          <input
+            type="text"
+            v-model="repairFormData.device_model"
+            class="input-field w-full" />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block mb-1">IMEI / Serial</label>
-            <input type="text" v-model="repairFormData.imei" class="input-field w-full" />
+            <input
+              type="text"
+              v-model="repairFormData.imei"
+              class="input-field w-full" />
           </div>
           <div>
             <label class="block mb-1">Passcode</label>
-            <input type="text" v-model="repairFormData.passcode" class="input-field w-full" />
+            <input
+              type="text"
+              v-model="repairFormData.passcode"
+              class="input-field w-full" />
           </div>
         </div>
 
         <!-- Description -->
         <div>
           <label class="block mb-1">Description</label>
-          <textarea v-model="repairFormData.description" class="input-field w-full" rows="3" />
+          <textarea
+            v-model="repairFormData.description"
+            class="input-field w-full"
+            rows="3" />
         </div>
 
         <!-- Total Cost -->
         <div>
           <label class="block mb-1">Total Cost</label>
-          <input :value="`$${repairFormData.total_cost.toFixed(2)}`" disabled class="input-field w-full" />
+          <input
+            :value="`$${repairFormData.total_cost.toFixed(2)}`"
+            disabled
+            class="input-field w-full" />
         </div>
 
-        <button @click="handleUpdateRepair" class="primary-btn w-full">Save Changes</button>
-        <div v-if="errors" class="text-red-600 mt-2">{{ errors }}</div>
+        <button
+          @click="handleUpdateRepair"
+          class="primary-btn w-full">
+          Save Changes
+        </button>
+        <div
+          v-if="errors"
+          class="text-red-600 mt-2">
+          {{ errors }}
+        </div>
       </div>
 
       <!-- RIGHT PANEL -->
@@ -313,20 +375,37 @@ onMounted(loadData);
         <h2 class="font-semibold mb-4">Select Repair Items</h2>
 
         <!-- Category Breadcrumb -->
-        <div v-if="categoryHistory.length" class="mb-4">
-          <button @click="goBack" class="text-blue-600 hover:underline mr-2">← Back</button>
-          <span v-for="(cat, i) in categoryHistory" :key="cat.id">
+        <div
+          v-if="categoryHistory.length"
+          class="mb-4">
+          <button
+            @click="goBack"
+            class="text-blue-600 hover:underline mr-2">
+            ← Back
+          </button>
+          <span
+            v-for="(cat, i) in categoryHistory"
+            :key="cat.id">
             <span v-if="i > 0"> / </span>
-            <span :class="i + 1 === categoryHistory.length ? 'text-green-600 font-semibold' : ''">
+            <span
+              :class="
+                i + 1 === categoryHistory.length
+                  ? 'text-green-600 font-semibold'
+                  : ''
+              ">
               {{ cat.name }}
             </span>
           </span>
         </div>
 
         <!-- Category Grid -->
-        <div v-if="childCategories.length || !currentCategory" class="grid grid-cols-5 2xl:grid-cols-6 gap-2 pb-8">
+        <div
+          v-if="childCategories.length || !currentCategory"
+          class="grid grid-cols-5 2xl:grid-cols-6 gap-2 pb-8">
           <div
-            v-for="category in currentCategory ? childCategories : categoryStore.parentCategories"
+            v-for="category in currentCategory
+              ? childCategories
+              : categoryStore.parentCategories"
             :key="category.id"
             @click="fetchSubcategoriesAndProducts(category)"
             class="border border-gray-300 rounded-sm text-center cursor-pointer hover:bg-blue-100 py-3 px-2 text-sm font-medium truncate">
@@ -335,40 +414,89 @@ onMounted(loadData);
         </div>
 
         <!-- Product Grid -->
-        <div v-if="products.length" class="grid grid-cols-5 gap-2 pb-8">
+        <div
+          v-if="products.length"
+          class="grid grid-cols-5 gap-2 pb-8">
           <div
             v-for="product in products"
             :key="product.id"
             @click="addToCart(product)"
             class="border p-2 rounded shadow hover:bg-green-400 cursor-pointer text-center">
             <p class="text-sm font-semibold truncate">{{ product.name }}</p>
-            <p class="text-xs text-green-500 font-bold">${{ product.selling_price }}</p>
+            <p class="text-xs text-green-500 font-bold">
+              ${{ product.selling_price }}
+            </p>
           </div>
         </div>
 
         <!-- Cart -->
-        <div v-if="cart.length">
-          <h3 class="font-semibold mb-2">Selected Items</h3>
-          <ul class="space-y-2">
+        <div
+          v-if="cart.length"
+          class="mt-6 space-y-4">
+          <h3 class="text-lg font-semibold border-b pb-2">Selected Items</h3>
+
+          <ul class="space-y-4">
             <li
               v-for="(item, index) in cart"
               :key="item.id"
-              class="border rounded p-2">
-              <div class="flex justify-between items-center">
-                <span>{{ index + 1 }}. {{ item.name }} x{{ item.quantity }}</span>
-                <button @click="removeFromCart(index)" class="text-red-500 text-sm hover:underline">Remove</button>
+              class="border rounded-lg p-4 shadow-sm bg-white dark:bg-gray-800">
+              <!-- Product & Quantity Row -->
+              <div class="flex justify-between items-center mb-2">
+                <div>
+                  <p class="font-medium text-gray-900 dark:text-white">
+                    {{ index + 1 }}. {{ item.name }}
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Quantity: {{ item.quantity }}
+                  </p>
+                </div>
+                <button
+                  @click="removeFromCart(index)"
+                  class="text-sm text-red-600 hover:underline font-medium">
+                  Remove
+                </button>
               </div>
-              <div class="flex items-center gap-4 mt-1">
-                <label class="text-sm">Discount:</label>
-                <input
-                  type="number"
-                  v-model.number="item.discount"
-                  min="0"
-                  class="input-field w-24"
-                  placeholder="0.00" />
-                <span class="text-sm">
-                  Line Total: ${{ (item.selling_price * item.quantity - item.discount).toFixed(2) }}
-                </span>
+
+              <!-- Discount & Line Total Row -->
+              <div
+                class="grid grid-cols-2 sm:grid-cols-3 gap-4 items-center text-sm">
+                <div>
+                  <label
+                    class="block mb-1 text-gray-700 dark:text-gray-300 font-medium"
+                    >Discount ($)</label
+                  >
+                  <input
+                    type="number"
+                    v-model.number="item.discount"
+                    min="0"
+                    class="input-field w-full"
+                    placeholder="0.00" />
+                </div>
+                <div>
+                  <label
+                    class="block mb-1 text-gray-700 dark:text-gray-300 font-medium"
+                    >Unit Price</label
+                  >
+                  <div
+                    class="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded text-gray-800 dark:text-white">
+                    ${{ item.selling_price }}
+                  </div>
+                </div>
+                <div>
+                  <label
+                    class="block mb-1 text-gray-700 dark:text-gray-300 font-medium"
+                    >Total</label
+                  >
+                  <div
+                    class="bg-green-50 dark:bg-green-900 px-3 py-2 rounded font-semibold text-green-700 dark:text-green-300">
+                    ${{
+                      (
+                        item.selling_price * item.quantity -
+                        item.discount
+                      ).toFixed(2)
+                    }}
+                  </div>
+                </div>
               </div>
             </li>
           </ul>

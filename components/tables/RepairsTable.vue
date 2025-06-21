@@ -69,6 +69,8 @@ const confirmDelete = async (value) => {
                   ? 'bg-orange-400'
                   : repair.status == 'completed'
                   ? 'bg-green-400'
+                  : repair.status == 'arrived'
+                  ? 'bg-teal-400'
                   : 'bg-red-400'
               " class="px-3 py-1 rounded-full text-xs uppercase font-semibold ">
               {{ repair.status }}</span
@@ -76,13 +78,15 @@ const confirmDelete = async (value) => {
           </TableCell>
           <TableCell><span
               :class="
-                repair.status == 'pending'
+                repair.payment_status == 'deposit_paid'
                   ? 'bg-blue-400'
-                  : repair.status == 'completed'
+                  : repair.payment_status == 'completed'
                   ? 'bg-green-400'
+                  : repair.payment_status == 'pending_payment'
+                  ? 'bg-yellow-400'
                   : 'bg-red-400'
               " class="px-3 py-1 rounded-full text-xs uppercase font-semibold ">
-              {{ repair.status }}</span
+              {{ repair.payment_status }}</span
             ></TableCell>
           <TableCell
             ><div class="flex items-center gap-4">
