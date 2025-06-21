@@ -32,6 +32,7 @@ const confirmDelete = async (value) => {
 
 <template>
   <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+    <h2 class="text-lg font-bold mb-2">Recent History</h2>
     <table
       class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
       <thead

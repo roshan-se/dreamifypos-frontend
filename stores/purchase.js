@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import axios from 'axios';
 
 export const usePurchaseStore = defineStore("purchase", () => {
   const runtimeConfig = useRuntimeConfig();
@@ -31,6 +32,19 @@ export const usePurchaseStore = defineStore("purchase", () => {
     }
   };
 
+  const addPurchaseBatch = async (products) => {
+    try {
+      const response = await axios.post(baseURL + "/multi-purchases", {
+        products,
+      });
+
+      return response;
+    } catch (err) {
+      console.error("Unexpected error:", err.response);
+      return err.response._data;
+    }
+  };
+
   const deletePurchase = async (purchaseId) => {
     try {
       const response = await $fetch(baseURL + "/purchases/" + purchaseId, {
@@ -50,5 +64,6 @@ export const usePurchaseStore = defineStore("purchase", () => {
     addPurchase,
     // updateCustomer,
     deletePurchase,
+    addPurchaseBatch,
   };
 });

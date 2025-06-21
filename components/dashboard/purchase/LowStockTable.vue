@@ -1,11 +1,51 @@
 <script setup>
 import { onMounted } from "vue";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const productStore = useProductStore();
+const purchaseStore = usePurchaseStore();
+
+const selectedProduct = ref(null);
+const quantity = ref(1);
+const openDialog = ref(false);
 
 onMounted(() => {
   productStore.fetchLowStockProducts();
 });
+
+const openPurchaseDialog = (product) => {
+  selectedProduct.value = product;
+  quantity.value = 1;
+  openDialog.value = true;
+};
+
+const handleCreatePurchase = async () => {
+  const res = await purchaseStore.addPurchase({
+    id: selectedProduct.value.id,
+    quantity: quantity.value,
+  });
+
+  if (res.error) {
+    useToastify(res.message, { type: 'error' });
+  } else {
+    useToastify("Purchase created successfully!", { type: 'success' });
+    openDialog.value = false;
+    await productStore.fetchLowStockProducts();
+  }
+};
 </script>
 
 <template>
@@ -14,7 +54,7 @@ onMounted(() => {
     <table
       class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
       <thead
-        class="text-xs text-gray-700 uppercase bg-yellow-50 dark:bg-gray-700 dark:text-gray-400">
+        class="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400">
         <tr>
           <th class="px-6 py-3">Product</th>
           <th class="px-6 py-3">Quantity</th>
@@ -26,12 +66,17 @@ onMounted(() => {
         <tr
           v-for="product in productStore.lowStock"
           :key="product.id"
-          class="odd:bg-white even:bg-yellow-50 border-b dark:border-gray-700 dark:text-white">
+          class="odd:bg-white even:bg-blue-50 border-b dark:border-gray-700 dark:text-white">
           <td class="px-6 py-4 font-medium">{{ product.name }}</td>
           <td class="px-6 py-4">{{ product.stock_quantity }}</td>
           <td class="px-6 py-4">{{ product.category?.name || "N/A" }}</td>
           <td class="px-6 py-4">
-            <button class="primary-btn">Order Now</button>
+            <Button
+              variant="outline"
+              class="cursor-pointer"
+              @click="openPurchaseDialog(product)">
+              Order Now
+            </Button>
           </td>
         </tr>
       </tbody>
@@ -45,5 +90,43 @@ onMounted(() => {
         </tr>
       </tbody>
     </table>
+    <!-- Alert Dialog Modal -->
+    <AlertDialog v-model:open="openDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>New Purchase</AlertDialogTitle>
+          <AlertDialogDescription>
+            Add new stock for : <strong class="text-blue-600">{{ selectedProduct?.name }}</strong>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div class="space-y-4 py-2">
+          <div>
+            <label class="text-sm font-medium">Old Stock</label>
+            <Input
+              type="number"
+              min="1"
+              v-model.number="selectedProduct.stock_quantity"
+              class="mt-1" disabled />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium">New Quantity</label>
+            <Input
+              type="number"
+              min="1"
+              v-model.number="quantity"
+              class="mt-1" />
+          </div>
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="handleCreatePurchase">
+            Confirm
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

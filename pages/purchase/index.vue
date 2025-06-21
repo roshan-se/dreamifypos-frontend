@@ -3,12 +3,6 @@
     class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-xl font-semibold uppercase">Purchase</h1>
-
-      <NuxtLink
-        to="/purchase/create"
-        class="primary-btn">
-        Create
-      </NuxtLink>
     </div>
 
     <ul
@@ -52,18 +46,24 @@
     </ul>
 
     <!-- Table of recent purchases -->
-    <div v-if="!showCreateForm">
+    <div v-if="activeTab == 'recent-purchase'">
       <RecentPurchaseTable />
     </div>
 
-    <LowStockTable />
+    <div v-if="activeTab == 'low-stock'">
+      <LowStockTable />
+    </div>
 
+    <div v-if="activeTab == 'new-purchase'">
+      <NewPurchase />
+    </div>
   </div>
 </template>
 
 <script setup>
 import RecentPurchaseTable from "~/components/dashboard/purchase/RecentPurchaseTable.vue";
 import LowStockTable from "~/components/dashboard/purchase/LowStockTable.vue";
+import NewPurchase from "~/components/dashboard/purchase/NewPurchase.vue";
 // State management
 
 const activeTab = ref("low-stock");
