@@ -1,25 +1,109 @@
 <script setup>
-
 const openModal = ref(false);
 const salesStore = useSalesStore();
 const errors = ref("");
 const startDate = ref("");
 const endDate = ref("");
-const maxDate = new Date().toISOString().split('T')[0];
+const maxDate = new Date().toISOString().split("T")[0];
 
 onMounted(() => {
-    const today = new Date().toISOString().split('T')[0];
-    console.log(today)
-    startDate.value = today;
-    endDate.value = today
-    salesStore.fetchSales(today, today);
-
+  const today = new Date().toISOString().split("T")[0];
+  console.log(today);
+  startDate.value = today;
+  endDate.value = today;
+  salesStore.fetchSales(today, today);
 });
 
 const getSales = () => {
-    salesStore.fetchSales(startDate.value, endDate.value)
-}
+  salesStore.fetchSales(startDate.value, endDate.value);
+};
 
+const downloadCSV = () => {
+  const headers = [
+    "Sales Date",
+    "Sales ID",
+    "Customer Name",
+    "Total Items",
+    "Sub Total",
+    "Discount",
+    "Tax",
+    "Total Amount",
+    "Payment Method",
+  ];
+
+  const rows = salesStore.sales.map((sale) => [
+    formatDateForCSV(sale.created_at),
+    sale.id,
+    sale.customer ? sale.customer.name : "Walkin Customer",
+    sale.sale_items.length,
+    sale.subtotal,
+    sale.discount,
+    sale.tax,
+    sale.total_price,
+    sale.payment_method,
+  ]);
+
+  let csvContent =
+    "data:text/csv;charset=utf-8," +
+    [headers, ...rows]
+      .map((row) =>
+        row
+          .map((item) =>
+            typeof item === "string" && item.includes(",") ? `"${item}"` : item
+          )
+          .join(",")
+      )
+      .join("\n");
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute(
+    "download",
+    `sales_report_${startDate.value}_to_${endDate.value}.csv`
+  );
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const formatDate = (isoString) => {
+  const date = new Date(isoString);
+
+  const datePart = date.toLocaleDateString("en-AU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const timePart = date.toLocaleTimeString("en-AU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  return `${datePart}\n${timePart}`;
+};
+
+const formatDateForCSV = (isoString) => {
+  const date = new Date(isoString);
+
+  const datePart = date.toLocaleDateString("en-AU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const timePart = date.toLocaleTimeString("en-AU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  return `${datePart} | ${timePart}`;
+};
 </script>
 
 <template>
@@ -28,13 +112,17 @@ const getSales = () => {
       class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
       <div class="flex justify-between items-center mb-2">
         <h1 class="text-xl font-semibold uppercase">Sales Report</h1>
-
-       
       </div>
-      <form @submit.prevent="getSales()" class="flex items-end w-full gap-4 mb-8">
+      <form
+        @submit.prevent="getSales()"
+        class="flex items-end w-full gap-4 mb-8">
         <div class="flex items-end gap-4">
           <div class="relative w-full">
-            <label for="" class="text-sm">Start Date</label>
+            <label
+              for=""
+              class="text-sm"
+              >Start Date</label
+            >
             <input
               type="date"
               id="simple-search"
@@ -44,7 +132,11 @@ const getSales = () => {
               placeholder="Search suppliers name..." />
           </div>
           <div class="relative w-full">
-            <label for="" class="text-sm">End Date</label>
+            <label
+              for=""
+              class="text-sm"
+              >End Date</label
+            >
             <input
               type="date"
               v-model="endDate"
@@ -55,6 +147,12 @@ const getSales = () => {
           </div>
         </div>
         <button class="primary-btn !m-0 !px-10 !py-3">Filter</button>
+        <button
+          type="button"
+          @click="downloadCSV"
+          class="success-btn !m-0 !py-3">
+          Download CSV
+        </button>
       </form>
 
       <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -63,6 +161,11 @@ const getSales = () => {
           <thead
             class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
             <tr>
+              <th
+                scope="col"
+                class="px-6 py-3">
+                Date
+              </th>
               <th
                 scope="col"
                 class="px-6 py-3">
@@ -115,6 +218,10 @@ const getSales = () => {
               v-for="sale in salesStore.sales"
               :key="sale.id"
               class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+              <td
+                class="px-6 py-4 text-xs font-medium text-gray-900 whitespace-pre-line dark:text-white">
+                {{ formatDate(sale.created_at) }}
+              </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                 {{ sale.id }}

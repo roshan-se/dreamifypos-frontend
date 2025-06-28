@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import JsBarcode from "jsbarcode";
+
 defineProps({
   products: Array,
 });
@@ -24,6 +26,70 @@ const productStore = useProductStore();
 // onMounted(() => {
 //   productStore.fetchProducts();
 // });
+
+const printBarcode = async (product) => {
+  const count = prompt(`How many barcodes to print for "${product.name}"?`, "1");
+
+  const quantity = parseInt(count);
+  if (isNaN(quantity) || quantity <= 0) {
+    alert("Please enter a valid quantity.");
+    return;
+  }
+
+  // Create HTML with multiple barcodes
+  let barcodeHTML = "";
+
+  for (let i = 0; i < quantity; i++) {
+    const div = document.createElement("div");
+    div.style.marginBottom = "12px";
+
+    const svg = document.createElement("svg");
+    JsBarcode(svg, product.sku, {
+      format: "CODE128",
+      lineColor: "#000",
+      width: 2,
+      height: 50,
+      displayValue: true,
+      fontSize: 14,
+    });
+
+    const label = `<p style="text-align:center; font-size:12px;">${product.name}</p>`;
+    div.appendChild(svg);
+    div.innerHTML += label;
+
+    barcodeHTML += div.outerHTML;
+  }
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Print Barcodes</title>
+        <style>
+          body {
+            font-family: sans-serif;
+            padding: 20px;
+            width: 80mm;
+            text-align: center;
+          }
+          svg {
+            display: block;
+            margin: 0 auto;
+          }
+          p {
+            margin: 4px 0;
+          }
+        </style>
+      </head>
+      <body>${barcodeHTML}</body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+};
 
 const emit = defineEmits();
 
@@ -122,7 +188,9 @@ const confirmDelete = async (value) => {
           <td class="px-6 py-4 flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="outline" class="cursor-pointer"
+                <Button
+                  variant="outline"
+                  class="cursor-pointer"
                   ><svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -139,13 +207,19 @@ const confirmDelete = async (value) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent class="w-56">
                 <DropdownMenuGroup>
-                  <DropdownMenuItem class="cursor-pointer">
+                  <DropdownMenuItem
+                    class="cursor-pointer"
+                    @click="printBarcode(product)">
                     <span>Print Barcode</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem  class="cursor-pointer" @click="$emit('edit-product', product)">
+                  <DropdownMenuItem
+                    class="cursor-pointer"
+                    @click="$emit('edit-product', product)">
                     <span>Edit</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem  class="cursor-pointer" @click="confirmDelete(product.id)">
+                  <DropdownMenuItem
+                    class="cursor-pointer"
+                    @click="confirmDelete(product.id)">
                     <span>Delete</span>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
