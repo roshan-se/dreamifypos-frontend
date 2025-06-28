@@ -46,6 +46,8 @@ const cash = ref(0);
 const loading = ref(false);
 const success = ref(false);
 
+const dialogOpen = ref(false);
+
 const gstRate = 0.1;
 
 const discountInput = reactive({});
@@ -193,10 +195,12 @@ const confirmSale = async (method) => {
   loading.value = true;
   try {
     await createSales(method);
-    success.value = true;
-    // clear cart and customer
-    cart.value = [];
-    selectedCustomer.value = null;
+    setTimeout(() => {
+      loading.value = false;
+      success.value = true;
+      
+      selectedCustomer.value = null;
+    }, 1000);
   } catch (err) {
     console.error(err);
     alert("Error processing sale. Please try again.");
@@ -212,10 +216,58 @@ const resetForm = () => {
   cash.value = "";
   loading.value = false;
   success.value = false;
+  dialogOpen.value = false;
+  // clear cart and customer
+  cart.value = [];
 };
 
 // Receipt actions
-const printReceipt = () => window.print();
+const printReceipt = () => {
+  const receipt = document.getElementById("printable-receipt");
+  if (!receipt) return alert("Receipt content not found!");
+
+  const printWindow = window.open("", "_blank");
+  const styles = `
+    <style>
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: monospace;
+          font-size: 11px;
+        }
+        .receipt-container {
+          width: 80mm;
+          padding: 4mm;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        th, td {
+          text-align: left;
+          padding: 2px 0;
+        }
+        th {
+          border-bottom: 1px solid #000;
+        }
+        td {
+          border-bottom: 1px dashed #aaa;
+        }
+      }
+    </style>
+  `;
+  printWindow.document.write(`
+    <html>
+      <head><title>Sales Receipt</title>${styles}</head>
+      <body>${receipt.innerHTML}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+};
 const newSale = () => resetForm();
 </script>
 
@@ -281,7 +333,7 @@ const newSale = () => resetForm();
                   <input
                     type="number"
                     min="1"
-                    :value="item.quantity"
+                    v-model.number="item.quantity"
                     class="w-10 text-center" />
                 </TableCell>
                 <TableCell>{{ item.name }}</TableCell>
@@ -395,9 +447,8 @@ const newSale = () => resetForm();
       <!-- Right: Products & Actions -->
       <div class="w-1/2 py-8 px-8 flex flex-col justify-between">
         <PosView @addToCart="addToCart" />
-        <div class="grid grid-cols-3 gap-6">
-          <button class="global-btn">View Tickets</button>
-          <button class="global-btn">View Invoices</button>
+        <div class="grid grid-cols-2 gap-3">
+          <NuxtLink to="/repairs" target="_blank" class="global-btn">View Tickets</NuxtLink>
           <NuxtLink
             to="/repairs/create"
             target="_blank"
@@ -405,29 +456,29 @@ const newSale = () => resetForm();
             Create Ticket
           </NuxtLink>
           <button
-            class="py-6 px-6 text-lg font-semibold bg-gray-100 text-gray-700 rounded-lg border transition duration-500 hover:bg-blue-600 hover:text-white">
-            More Actions
-          </button>
-          <button
             @click="resetForm"
             class="py-6 px-6 text-lg font-semibold bg-red-200 text-red-600 rounded-lg border border-red-200 transition duration-500 hover:bg-red-600 hover:text-white">
             Cancel
           </button>
-          <AlertDialog>
-            <AlertDialogTrigger as-child>
-              <button
-                class="py-6 px-6 text-lg font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg border border-blue-200 shadow-xs transition duration-500"
-                :disabled="cart.length < 1">
-                Checkout
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Sales Checkout</AlertDialogTitle>
-              </AlertDialogHeader>
+
+          <button
+            class="py-6 px-6 text-lg font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg border border-blue-200 shadow-xs transition duration-500"
+            @click="dialogOpen = true"
+            :disabled="cart.length < 1">
+            Checkout
+          </button>
+
+          <div
+            v-if="dialogOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div class="bg-white w-full max-w-lg p-6 rounded-xl shadow-lg">
+              <!-- Header -->
+              <div class="mb-4">
+                <h2 class="text-2xl font-bold">Sales Checkout</h2>
+              </div>
 
               <!-- Form vs Success -->
-              <AlertDialogDescription v-if="!success">
+              <div v-if="!success">
                 <div class="flex flex-col items-center gap-2">
                   <h4 class="text-xl font-semibold uppercase text-black">
                     Amount
@@ -462,9 +513,9 @@ const newSale = () => resetForm();
                       class="input-field w-full" />
                   </div>
                 </div>
-              </AlertDialogDescription>
+              </div>
 
-              <AlertDialogDescription
+              <div
                 v-else
                 class="flex flex-col items-center py-6 gap-4">
                 <svg
@@ -476,23 +527,25 @@ const newSale = () => resetForm();
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 10-1.414-1.414L9 10.586 7.707 9.293a1 1 0 10-1.414 1.414L9 13.414l4.707-4.707z"
                     clip-rule="evenodd" />
                 </svg>
-                <h3 class="text-2xl font-semibold">Payment Successful!</h3>
-              </AlertDialogDescription>
+                <h3 class="text-2xl font-semibold">Purchase Successful!</h3>
+              </div>
 
-              <AlertDialogFooter class="space-x-4">
+              <div class="flex justify-end space-x-4 mt-4">
                 <template v-if="!success">
-                  <AlertDialogCancel @click="resetForm"
-                    >Cancel</AlertDialogCancel
-                  >
-                  <AlertDialogAction
+                  <button
+                    @click="resetForm"
+                    class="px-4 py-2 border text-sm leading-0 rounded-lg hover:bg-gray-100 font-semibold">
+                    Cancel
+                  </button>
+                  <button
                     @click="confirmSale('bank')"
                     :disabled="loading"
-                    class="primary-btn flex items-center justify-center">
+                    class="primary-btn !m-0">
                     <span
                       v-if="loading"
                       class="loader mr-2"></span>
                     <span>{{ loading ? "Processing…" : "Confirm" }}</span>
-                  </AlertDialogAction>
+                  </button>
                 </template>
                 <template v-else>
                   <button
@@ -506,9 +559,58 @@ const newSale = () => resetForm();
                     New Sale
                   </button>
                 </template>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Hidden Receipt Template -->
+    <div
+      id="printable-receipt"
+      class="hidden">
+      <div class="receipt-container !w-[80mm] !p-[4mm] !text-[11px]">
+        <h2 class="text-xl font-bold text-center mb-2">Dreamify POS Receipt</h2>
+        <p class="text-sm text-center mb-4">
+          Date: {{ new Date().toLocaleString() }}
+        </p>
+
+        <div
+          v-if="selectedCustomer"
+          class="mb-4">
+          <p><strong>Customer:</strong> {{ selectedCustomer.name }}</p>
+          <p><strong>Phone:</strong> {{ selectedCustomer.phone }}</p>
+        </div>
+
+        <table class="w-full text-sm border-t border-b border-black mb-4">
+          <thead>
+            <tr class="text-left border-b border-black">
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Disc</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(item, index) in cart"
+              :key="index"
+              class="border-b border-dashed">
+              <td>{{ item.name }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.selling_price }}</td>
+              <td>${{ (item.discount || 0) }}</td>
+              <td>${{ item.total_price }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="text-right text-sm space-y-1">
+          <p><strong>Subtotal:</strong> ${{ subtotal }}</p>
+          <p><strong>Discount:</strong> ${{ totalDisc }}</p>
+          <p><strong>GST (10%):</strong> ${{ totalTax }}</p>
+          <p class="text-lg font-bold">Grand Total: ${{ grandTotal }}</p>
         </div>
       </div>
     </div>
