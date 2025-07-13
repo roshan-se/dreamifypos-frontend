@@ -7,10 +7,12 @@ export const useProductStore = defineStore("product", () => {
   const products = ref([]);
   const lowStock = ref([]);
 
+  const branchStore = useBranchStore() 
+
   const fetchLowStockProducts = async (branchId = null) => {
     try {
-      const url = branchId 
-        ? `${baseURL}/products/low-stock?branch_id=${branchId}`
+      const url = branchStore.activeBranch 
+        ? `${baseURL}/products/low-stock?branch_id=${branchStore.activeBranch.id}`
         : `${baseURL}/products/low-stock`;
       
       const res = await axios.get(url);

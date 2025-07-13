@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 
 const productStore = useProductStore();
 const purchaseStore = usePurchaseStore();
+const branchStore = useBranchStore()
 
 const search = ref('');
 const selectedProducts = ref([]); // Array of { id, name, selling_price, quantity }
@@ -40,19 +41,33 @@ const updateQuantity = (id, qty) => {
 };
 
 const createPurchase = async () => {
+  // Get active branch from your branch store
+  const activeBranchId = branchStore.activeBranch?.id;
+  
+  if (!activeBranchId) {
+    useToastify('Please select a branch first', { type: 'error' });
+    return;
+  }
+
   const products = selectedProducts.value.map((p) => ({
     id: p.id,
     quantity: p.quantity,
     selling_price: p.selling_price,
+    branch_id: activeBranchId, // Add branch_id to each product
   }));
 
-  const res = await purchaseStore.addPurchaseBatch(products);
+  const res = await purchaseStore.addPurchaseBatch({
+    products,
+    branch_id: activeBranchId // Also send branch_id at the top level
+  });
 
   if (res.error) {
     useToastify(res.message, { type: 'error' });
   } else {
     useToastify('Purchase created successfully!', { type: 'success' });
     selectedProducts.value = [];
+    // Optionally refresh purchases list
+    await purchaseStore.fetchPurchases();
   }
 };
 </script>

@@ -2,6 +2,7 @@
 import axios from "axios";
 import { ref, onMounted } from "vue";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -33,32 +34,55 @@ const stockModalOpen = ref(false);
 const selectedProduct = ref(null);
 const stockData = ref([]);
 
-const checkStock = async (productId) => {
+// Enable editing for a row
+const enableEditing = (item) => {
+  stockData.value.forEach((i) => {
+    i.editing = false;
+    i.editedQuantity = i.quantity;
+  });
+  item.editing = true;
+};
 
-  console.log("checkig whole data", productStore.products.value)
+// Cancel editing
+const cancelEditing = (item) => {
+  item.editing = false;
+};
+
+// Update quantity
+const updateQuantity = async (item) => {
   try {
-    selectedProduct.value = productStore.products.find(
-      (p) => p.id == productId
+    const response = await axios.put(
+      `${baseURL}/inventory/${selectedProduct.value.id}/branch/${item.branch_id}`,
+      {
+        quantity: item.editedQuantity,
+      }
     );
 
-    console.log("selected product", selectedProduct)
+    item.quantity = item.editedQuantity;
+    item.editing = false;
 
-    // Use your runtime config base URL
-    const response = await axios.get(
-      `${baseURL}/products/${productId}/inventory`
-    );
+    // Show success notification
+    toast.success("Quantity updated successfully");
+  } catch (error) {
+    console.error("Error updating quantity:", error);
+    toast.error("Failed to update quantity");
+  }
+};
 
-    console.log("Check Stock Data", response);
-
-    stockData.value = response.data.data;
+// Fetch stock data (your existing function)
+const fetchStockData = async (product) => {
+  selectedProduct.value = product;
+  try {
+    const response = await axios.get(`${baseURL}/products/${product.id}/inventory`);
+    stockData.value = response.data.data.map((item) => ({
+      ...item,
+      editing: false,
+      editedQuantity: item.quantity,
+    }));
     stockModalOpen.value = true;
   } catch (error) {
-    console.error("Error fetching stock:", error);
-    // Optionally show error toast
-    useToastify("Failed to fetch inventory data", {
-      type: "error",
-      position: "top-right",
-    });
+    console.error("Error fetching stock data:", error);
+    toast.error("Failed to load inventory data");
   }
 };
 
@@ -215,7 +239,7 @@ onMounted(() => {
             ${{ product.selling_price }}
           </td>
           <td class="px-6 py-4">{{ product.sku }}</td>
-          
+
           <td class="px-6 py-4 flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
@@ -245,7 +269,7 @@ onMounted(() => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     class="cursor-pointer"
-                    @click="checkStock(product.id)">
+                    @click="fetchStockData(product)">
                     <span>Check Stock</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -266,13 +290,15 @@ onMounted(() => {
       </tbody>
     </table>
   </div>
-  <!-- Add this modal component near the bottom of your template -->
-  <Dialog :open="stockModalOpen" @update:open="val => stockModalOpen = val">
-    <DialogContent class="sm:max-w-[600px]">
+  <Dialog
+    :open="stockModalOpen"
+    @update:open="(val) => (stockModalOpen = val)">
+    <DialogContent class="w-full !max-w-max">
       <DialogHeader>
-        <DialogTitle
-          >Stock Inventory for <span class="text-green-700">{{ selectedProduct?.name }}</span> </DialogTitle
-        >
+        <DialogTitle>
+          Stock Inventory for
+          <span class="text-green-700">{{ selectedProduct?.name }}</span>
+        </DialogTitle>
         <DialogDescription>
           Current stock levels across all branches
         </DialogDescription>
@@ -301,37 +327,78 @@ onMounted(() => {
               </th>
               <th
                 scope="col"
-                class="px-6 py-3">Status</th>
+                class="px-6 py-3">
+                Status
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr
               v-for="item in stockData"
-              :key="item.branch.id"
+              :key="item.branch_id"
               class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
-              <td class="px-6 py-4">{{ item.id }}</td>
+              <td class="px-6 py-4">{{ item.branch_id }}</td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                {{ item.branch.name }}
+                {{ item.branch_name }}
               </td>
               <td
-                class="px-6 py-4 font-medium text-center text-gray-900 whitespace-nowrap dark:text-white">
-                {{ item.quantity }}
+                class="px-6 py-4 font-medium text-center text-gray-900 whitespace-nowrap dark:text-white flex items-center justify-center">
+                <template v-if="item.editing">
+                  <Input
+                    v-model="item.editedQuantity"
+                    type="number"
+                    min="0"
+                    class="w-20 text-center" />
+                </template>
+                <template v-else>
+                  {{ item.quantity }}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="ml-2"
+                    @click="enableEditing(item)">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="size-6">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                  </Button>
+                </template>
               </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                <Badge
-                  :variant="
-                    item.quantity > 5
-                      ? 'default'
-                      : 'destructive'
-                  ">
-                  {{
-                    item.quantity > 5
-                      ? "In Stock"
-                      : "Low Stock"
-                  }}
+                <Badge :variant="item.quantity > 5 ? 'default' : 'destructive'">
+                  {{ item.quantity > 5 ? "In Stock" : "Low Stock" }}
                 </Badge>
+              </td>
+              <td class="px-6 py-4">
+                <template v-if="item.editing">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="mr-2"
+                    @click="cancelEditing(item)">
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    @click="updateQuantity(item)">
+                    Save
+                  </Button>
+                </template>
               </td>
             </tr>
           </tbody>

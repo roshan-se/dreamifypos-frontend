@@ -22,20 +22,23 @@ const selectedProduct = ref(null);
 const quantity = ref(1);
 const openDialog = ref(false);
 
+const branchStore = useBranchStore()
+
 onMounted(() => {
   productStore.fetchLowStockProducts();
 });
 
-const openPurchaseDialog = (product) => {
-  selectedProduct.value = product;
+const openPurchaseDialog = (item) => {
+  selectedProduct.value = item;
   quantity.value = 1;
   openDialog.value = true;
 };
 
 const handleCreatePurchase = async () => {
   const res = await purchaseStore.addPurchase({
-    id: selectedProduct.value.id,
+    id: selectedProduct.value.product.id,
     quantity: quantity.value,
+    branch_id: branchStore.activeBranch.id
   });
 
   if (res.error) {
@@ -64,17 +67,17 @@ const handleCreatePurchase = async () => {
       </thead>
       <tbody v-if="productStore.lowStock">
         <tr
-          v-for="product in productStore.lowStock"
-          :key="product.id"
+          v-for="item in productStore.lowStock"
+          :key="item.product.id"
           class="odd:bg-white even:bg-blue-50 border-b dark:border-gray-700 dark:text-white">
-          <td class="px-6 py-4 font-medium">{{ product.name }}</td>
-          <td class="px-6 py-4">{{ product.stock_quantity }}</td>
-          <td class="px-6 py-4">{{ product.category?.name || "N/A" }}</td>
+          <td class="px-6 py-4 font-medium">{{ item.product.name }}</td>
+          <td class="px-6 py-4">{{ item.quantity }}</td>
+          <td class="px-6 py-4">{{ item.product.category?.name || "N/A" }}</td>
           <td class="px-6 py-4">
             <Button
               variant="outline"
               class="cursor-pointer"
-              @click="openPurchaseDialog(product)">
+              @click="openPurchaseDialog(item)">
               Order Now
             </Button>
           </td>
@@ -96,7 +99,7 @@ const handleCreatePurchase = async () => {
         <AlertDialogHeader>
           <AlertDialogTitle>New Purchase</AlertDialogTitle>
           <AlertDialogDescription>
-            Add new stock for : <strong class="text-blue-600">{{ selectedProduct?.name }}</strong>
+            Add new stock for : <strong class="text-blue-600">{{ selectedProduct?.product.name }}</strong>
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -106,7 +109,7 @@ const handleCreatePurchase = async () => {
             <Input
               type="number"
               min="1"
-              v-model.number="selectedProduct.stock_quantity"
+              v-model.number="selectedProduct.quantity"
               class="mt-1" disabled />
           </div>
 

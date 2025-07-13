@@ -49,6 +49,7 @@ const logout = async () => {
 // Set active branch
 const setActiveBranch = (branch) => {
   branchStore.setActiveBranch(branch);
+  window.location.reload();
 };
 </script>
 

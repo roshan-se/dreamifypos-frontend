@@ -5,10 +5,12 @@ export const useSalesStore = defineStore("sales", () => {
   const baseURL = runtimeConfig.public.apiBase;
   const sales = ref([]);
 
+  const branchStore = useBranchStore()
+
   const fetchSales = async (startDate, endDate) => {
     console.log("Check", startDate, endDate)
     try {
-      const response = await $fetch(`${baseURL}/sales?start_date=${startDate}&end_date=${endDate}`);
+      const response = await $fetch(`${baseURL}/sales?start_date=${startDate}&end_date=${endDate}&branch_id=${branchStore.activeBranch.id}`);
       sales.value = response
 
     } catch (err) {
