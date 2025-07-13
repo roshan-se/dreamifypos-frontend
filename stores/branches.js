@@ -5,7 +5,7 @@ import api from '../lib/api'; // Import your configured axios instance
 export const useBranchStore = defineStore('branch', () => {
   const branches = ref([]);
   const isLoading = ref(false);
-  const activeBranch = ref(null);
+  const activeBranch = ref(localStorage.getItem('activeBranch') ? JSON.parse(localStorage.getItem('activeBranch')) : null);
   const error = ref(null);
 
   // Fetch all branches from API

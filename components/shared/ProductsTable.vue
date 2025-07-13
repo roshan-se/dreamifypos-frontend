@@ -1,18 +1,21 @@
 <script setup>
+import axios from "axios";
 import { ref, onMounted } from "vue";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -21,14 +24,49 @@ import JsBarcode from "jsbarcode";
 defineProps({
   products: Array,
 });
-const productStore = useProductStore();
 
-// onMounted(() => {
-//   productStore.fetchProducts();
-// });
+const runtimeConfig = useRuntimeConfig();
+const baseURL = runtimeConfig.public.apiBase;
+
+const productStore = useProductStore();
+const stockModalOpen = ref(false);
+const selectedProduct = ref(null);
+const stockData = ref([]);
+
+const checkStock = async (productId) => {
+
+  console.log("checkig whole data", productStore.products.value)
+  try {
+    selectedProduct.value = productStore.products.find(
+      (p) => p.id == productId
+    );
+
+    console.log("selected product", selectedProduct)
+
+    // Use your runtime config base URL
+    const response = await axios.get(
+      `${baseURL}/products/${productId}/inventory`
+    );
+
+    console.log("Check Stock Data", response);
+
+    stockData.value = response.data.data;
+    stockModalOpen.value = true;
+  } catch (error) {
+    console.error("Error fetching stock:", error);
+    // Optionally show error toast
+    useToastify("Failed to fetch inventory data", {
+      type: "error",
+      position: "top-right",
+    });
+  }
+};
 
 const printBarcode = async (product) => {
-  const count = prompt(`How many barcodes to print for "${product.name}"?`, "1");
+  const count = prompt(
+    `How many barcodes to print for "${product.name}"?`,
+    "1"
+  );
 
   const quantity = parseInt(count);
   if (isNaN(quantity) || quantity <= 0) {
@@ -114,6 +152,10 @@ const confirmDelete = async (value) => {
     }
   }
 };
+
+onMounted(() => {
+  productStore.fetchProducts();
+});
 </script>
 
 <template>
@@ -151,11 +193,6 @@ const confirmDelete = async (value) => {
           <th
             scope="col"
             class="px-6 py-3">
-            Stock
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3">
             Action
           </th>
         </tr>
@@ -178,13 +215,7 @@ const confirmDelete = async (value) => {
             ${{ product.selling_price }}
           </td>
           <td class="px-6 py-4">{{ product.sku }}</td>
-          <td
-            class="px-6 py-4"
-            :class="[
-              product.stock_quantity > 10 ? 'text-green-600' : 'text-red-600',
-            ]">
-            {{ product.stock_quantity }}
-          </td>
+          
           <td class="px-6 py-4 flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
@@ -214,6 +245,11 @@ const confirmDelete = async (value) => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     class="cursor-pointer"
+                    @click="checkStock(product.id)">
+                    <span>Check Stock</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    class="cursor-pointer"
                     @click="$emit('edit-product', product)">
                     <span>Edit</span>
                   </DropdownMenuItem>
@@ -230,4 +266,77 @@ const confirmDelete = async (value) => {
       </tbody>
     </table>
   </div>
+  <!-- Add this modal component near the bottom of your template -->
+  <Dialog :open="stockModalOpen" @update:open="val => stockModalOpen = val">
+    <DialogContent class="sm:max-w-[600px]">
+      <DialogHeader>
+        <DialogTitle
+          >Stock Inventory for <span class="text-green-700">{{ selectedProduct?.name }}</span> </DialogTitle
+        >
+        <DialogDescription>
+          Current stock levels across all branches
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="py-4">
+        <table
+          class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+          <thead
+            class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+              <th
+                scope="col"
+                class="px-6 py-3">
+                Branch ID
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3">
+                Branch Name
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-center">
+                Quantity
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in stockData"
+              :key="item.branch.id"
+              class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+              <td class="px-6 py-4">{{ item.id }}</td>
+              <td
+                class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                {{ item.branch.name }}
+              </td>
+              <td
+                class="px-6 py-4 font-medium text-center text-gray-900 whitespace-nowrap dark:text-white">
+                {{ item.quantity }}
+              </td>
+              <td
+                class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <Badge
+                  :variant="
+                    item.quantity > 5
+                      ? 'default'
+                      : 'destructive'
+                  ">
+                  {{
+                    item.quantity > 5
+                      ? "In Stock"
+                      : "Low Stock"
+                  }}
+                </Badge>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </DialogContent>
+  </Dialog>
 </template>

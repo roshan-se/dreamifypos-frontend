@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import axios from "axios";
 import PosView from "~/components/shared/PosView.vue";
 import {
   AlertDialog,
@@ -32,6 +33,12 @@ const baseURL = runtimeConfig.public.apiBase;
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
 const customerStore = useCustomerStore();
+
+const branchStore = useBranchStore();
+
+const token = localStorage.getItem("token");
+// console.log(typeof(branchStore.activeBranch))
+console.log("Checking branch ID", typeof branchStore?.activeBranch.id);
 
 // State
 const selectedCategory = ref(null);
@@ -158,57 +165,75 @@ const selectCustomer = (c) => {
 const clearCustomer = () => (selectedCustomer.value = null);
 
 // API call
-const createSales = async (method) => {
+const createSales = async () => {
   const saleData = {
+    branch_id: branchStore.activeBranch.id, // Only send necessary data
     customer_id: selectedCustomer.value?.id || null,
     items: cart.value.map((item) => ({
       product_id: item.id,
       quantity: item.quantity,
-      price: item.selling_price,
+      unit_price: item.selling_price,
       subtotal: item.subtotal,
       discount: item.discount,
-      tax: item.tax,
+      gst_amount: item.tax,
       total_price: item.total_price,
     })),
-    // unwrap the computed refs here
     subtotal: subtotal.value,
-    gst: totalTax.value,
     discount: totalDisc.value,
-    total: grandTotal.value,
-    payment_method: method,
+    gst_amount: totalTax.value,
+    total_price: grandTotal.value,
+    payment_method:
+      eftpos.value && cash.value > 0
+        ? "mixed"
+        : eftpos.value
+        ? "eftpos"
+        : "cash",
     bank_amount: eftpos.value,
     cash_amount: cash.value,
     change_amount: changeAmount.value,
-    date: new Date().toISOString(),
   };
 
-  const res = await fetch(baseURL + "/sales", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(saleData),
-  });
-  if (!res.ok) throw new Error("Failed to process sale");
-};
-
-// Confirm with loader
-const confirmSale = async (method) => {
-  loading.value = true;
   try {
-    await createSales(method);
-    setTimeout(() => {
-      loading.value = false;
-      success.value = true;
-      
-      selectedCustomer.value = null;
-    }, 1000);
+    const res = await axios.post(`${baseURL}/sales`, saleData, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // Explicit success check
+    if (res.status === 201) {
+      // 201 Created
+      return res.data;
+    }
+    throw new Error(res.data.message || "Failed to process sale");
   } catch (err) {
-    console.error(err);
-    alert("Error processing sale. Please try again.");
-  } finally {
-    loading.value = false;
+    console.error("API Error:", err.response?.data || err.message);
+    throw err; // Re-throw for confirmSale to handle
   }
 };
 
+// Confirm with loader
+const confirmSale = async () => {
+  loading.value = true;
+  try {
+    // Await the sale creation and success state together
+    await createSales();
+
+    // Success handling
+    loading.value = false;
+    success.value = true;
+    selectedCustomer.value = null;
+  } catch (err) {
+    console.error("Sale error:", err);
+    loading.value = false;
+
+    // Only show alert for actual errors, not successful responses
+    if (!err.response || err.response.status !== 200) {
+      alert("Error processing sale. Please try again.");
+    }
+  }
+};
 // Reset modal state
 const resetForm = () => {
   discount.value = 0;
@@ -298,7 +323,7 @@ const newSale = () => resetForm();
           </div>
           <div
             v-if="selectedCustomer"
-            class="mb-4 p-4 bg-stone-100 rounded flex justify-between items-center">
+            class="mb-4 p-4 bg-white shadow-md rounded-md rounded flex justify-between items-center">
             <div>
               <p class="font-semibold text-sm">
                 Customer: {{ selectedCustomer.name }}
@@ -309,7 +334,7 @@ const newSale = () => resetForm();
             </div>
             <button
               @click="clearCustomer"
-              class="text-red-500">
+              class="text-red-500 text-3xl cursor-pointer">
               &times;
             </button>
           </div>
@@ -448,7 +473,12 @@ const newSale = () => resetForm();
       <div class="w-1/2 py-8 px-8 flex flex-col justify-between">
         <PosView @addToCart="addToCart" />
         <div class="grid grid-cols-2 gap-3">
-          <NuxtLink to="/repairs" target="_blank" class="global-btn">View Tickets</NuxtLink>
+          <NuxtLink
+            to="/repairs"
+            target="_blank"
+            class="global-btn"
+            >View Tickets</NuxtLink
+          >
           <NuxtLink
             to="/repairs/create"
             target="_blank"
@@ -538,7 +568,7 @@ const newSale = () => resetForm();
                     Cancel
                   </button>
                   <button
-                    @click="confirmSale('bank')"
+                    @click="confirmSale"
                     :disabled="loading"
                     class="primary-btn !m-0">
                     <span
@@ -600,7 +630,7 @@ const newSale = () => resetForm();
               <td>{{ item.name }}</td>
               <td>{{ item.quantity }}</td>
               <td>${{ item.selling_price }}</td>
-              <td>${{ (item.discount || 0) }}</td>
+              <td>${{ item.discount || 0 }}</td>
               <td>${{ item.total_price }}</td>
             </tr>
           </tbody>

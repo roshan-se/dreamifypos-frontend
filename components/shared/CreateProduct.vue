@@ -1,103 +1,119 @@
 <script setup>
-import { reactive, ref, onBeforeUnmount } from 'vue'
+import { reactive, ref, onBeforeUnmount, computed } from "vue";
+import { useBranchStore } from "../stores/branches";
 
-// pull in Nuxt’s runtime config
-const config = useRuntimeConfig()
-
-// now you can reference your .env var
-const imageBase = config.public.imageBase
+const branchStore = useBranchStore();
+const config = useRuntimeConfig();
+const imageBase = config.public.imageBase;
 
 const props = defineProps({
   currentCategory: Object,
-  editProduct: Object, // New prop for editing
+  editProduct: Object,
   openModal: Boolean,
 });
 
 const emit = defineEmits();
 
-//const openModal = ref(false);
 const categoryStore = useCategoryStore();
 const productStore = useProductStore();
-
 const variationStore = useVariationStore();
 const errors = ref("");
 
+// Simplified product form - no inventory fields
 const productFormData = reactive({
   name: "",
   sku: "",
   barcode: "",
   category_id: null,
-  
   purchase_price: null,
   selling_price: null,
-  stock_quantity: null,
-  stock_alert_threshold: 5,
   variation_id: null,
   status: "active",
   image_url: null
 });
 
-const imagePreview = ref(null)
+// Branch inventory data for new products
+const initialInventory = reactive({
+  branch_id: null,
+  quantity: 0,
+});
+
+const prepareProductData = () => {
+  return {
+    ...productFormData,
+    quantity: initialInventory.quantity,
+    branches:
+      initialInventory.branch_id === "all"
+        ? branchStore.branches.map((branch) => ({
+            branch_id: branch.id,
+            quantity: initialInventory.quantity,
+          }))
+        : [
+            {
+              branch_id: initialInventory.branch_id,
+              quantity: initialInventory.quantity,
+            },
+          ],
+  };
+};
+
+const imagePreview = ref(null);
 
 // when file input changes
 function onFileChange(event) {
-  const file = event.target.files?.[0]
+  const file = event.target.files?.[0];
   if (!file) {
-    // user cleared the selection
-    productFormData.image_url = null
-    imagePreview.value = null
-    return
+    productFormData.image_url = null;
+    imagePreview.value = null;
+    return;
   }
-  productFormData.image_url = file
-  imagePreview.value = URL.createObjectURL(file)
+  productFormData.image_url = file;
+  imagePreview.value = URL.createObjectURL(file);
 }
 
-// clean up the object URL when component unmounts
 onBeforeUnmount(() => {
   if (imagePreview.value) {
-    URL.revokeObjectURL(imagePreview.value)
+    URL.revokeObjectURL(imagePreview.value);
   }
-})
-
+});
 
 watchEffect(() => {
   if (props.editProduct) {
-    
     productFormData.name = props.editProduct.name;
     productFormData.sku = props.editProduct.sku;
     productFormData.barcode = props.editProduct.barcode;
     productFormData.category_id = props.editProduct.category_id;
-    
     productFormData.purchase_price = props.editProduct.purchase_price;
     productFormData.selling_price = props.editProduct.selling_price;
-    productFormData.stock_quantity = props.editProduct.stock_quantity;
-    productFormData.stock_alert_threshold =
-      props.editProduct.stock_alert_threshold;
     productFormData.status = props.editProduct.status;
-    productFormData.image_url = props.editProduct.image_url
+    productFormData.image_url = props.editProduct.image_url;
+    productFormData.variation_id = props.editProduct.variation_id;
   }
 });
 
 const handleCreateProduct = async () => {
   productFormData.category_id = props.currentCategory.id;
-  productFormData.name =
-    props.currentCategory.name + " - " + productFormData.name;
-  const res = await productStore.addProduct(productFormData);
 
-  if (res.errors) {
-    console.log("Check", res.message);
-    console.log("Checking response in form", Object.values(res.errors)[0][0]);
-    errors.value = Object.values(res.errors)[0][0];
-  } else {
-    //openModal.value = false;
-    closeModal();
-    resetForm();
-    useToastify("Product added successfully!", {
-      autoClose: 3000,
-      position: ToastifyOption.POSITION.TOP_RIGHT,
-      type: "success",
-    });
-    emit("create-product");
+  // For new products, combine product data with initial inventory
+  const productData = prepareProductData();
+
+  try {
+    const res = await productStore.addProduct(productData);
+
+    if (res.errors) {
+      errors.value = Object.values(res.errors)[0][0];
+    } else {
+      closeModal();
+      resetForm();
+      useToastify("Product added successfully!", {
+        autoClose: 3000,
+        position: ToastifyOption.POSITION.TOP_RIGHT,
+        type: "success",
+      });
+      emit("create-product");
+    }
+  } catch (error) {
+    console.log("New Error", error);
   }
 };
 
@@ -109,11 +125,8 @@ const handleUpdateProduct = async () => {
   );
 
   if (res.errors) {
-    console.log("Check", res.message);
-    console.log("Checking response in form", Object.values(res.errors)[0][0]);
     errors.value = Object.values(res.errors)[0][0];
   } else {
-    //openModal.value = false;
     resetForm();
     useToastify("Product updated successfully!", {
       autoClose: 3000,
@@ -130,14 +143,15 @@ const resetForm = () => {
   productFormData.sku = "";
   productFormData.barcode = "";
   productFormData.category_id = null;
-
   productFormData.variation_id = null;
   productFormData.purchase_price = null;
   productFormData.selling_price = null;
-  productFormData.stock_quantity = null;
-  productFormData.stock_alert_threshold = 5;
   productFormData.status = "active";
-  productFormData.image_url = null
+  productFormData.image_url = null;
+
+  // Reset inventory fields
+  initialInventory.branch_id = null;
+  initialInventory.quantity = 0;
 };
 
 const closeModal = () => {
@@ -145,11 +159,15 @@ const closeModal = () => {
   emit("close-modal", false);
 };
 
-onMounted(() => {
-  categoryStore.fetchCategories();
-  productStore.fetchProducts();
-  
-  variationStore.fetchVariations();
+onMounted(async () => {
+  await categoryStore.fetchCategories();
+  await variationStore.fetchVariations();
+  await branchStore.fetchBranches();
+
+  // Set default branch if available
+  if (branchStore.branches.length > 0 && !initialInventory.branch_id) {
+    initialInventory.branch_id = branchStore.branches[0].id;
+  }
 });
 </script>
 
@@ -217,18 +235,22 @@ onMounted(() => {
                     accept="image/*"
                     @change="onFileChange"
                     class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 py-2 px-4" />
-                  <!-- preview -->
                   <img
                     v-if="imagePreview || editProduct"
-                    :src="editProduct ? imageBase + productFormData.image_url : imagePreview"
+                    :src="
+                      editProduct
+                        ? imageBase + productFormData.image_url
+                        : imagePreview
+                    "
                     alt="Image preview"
                     class="mt-2 h-20 w-20 object-cover rounded" />
                 </div>
+
                 <div class="col-span-2">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Product Name</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Product Name
+                  </label>
                   <div
                     v-if="!editProduct"
                     class="flex items-center gap-2 rounded-lg border pl-2 bg-gray-800 overflow-hidden">
@@ -254,9 +276,9 @@ onMounted(() => {
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >SKU</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    SKU
+                  </label>
                   <input
                     type="text"
                     v-model="productFormData.sku"
@@ -266,9 +288,9 @@ onMounted(() => {
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Barcode</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Barcode
+                  </label>
                   <input
                     type="text"
                     v-model="productFormData.barcode"
@@ -278,22 +300,19 @@ onMounted(() => {
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Category</label
-                  >
-                  <div
-                    type="text"
-                    class="input-field !bg-blue-100"
-                    placeholder="Enter SKU">
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Category
+                  </label>
+                  <div class="input-field !bg-blue-100">
                     {{ currentCategory.name }}
                   </div>
                 </div>
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Purchase Price</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Purchase Price
+                  </label>
                   <input
                     type="number"
                     v-model="productFormData.purchase_price"
@@ -304,9 +323,9 @@ onMounted(() => {
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Selling Price</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Selling Price
+                  </label>
                   <input
                     type="number"
                     v-model="productFormData.selling_price"
@@ -315,36 +334,48 @@ onMounted(() => {
                     required />
                 </div>
 
-                <div class="col-span-1">
-                  <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Stock Quantity</label
-                  >
-                  <input
-                    type="number"
-                    v-model="productFormData.stock_quantity"
-                    class="input-field"
-                    placeholder="Enter stock quantity"
-                    required />
-                </div>
+                <!-- Initial Inventory Setup (only for new products) -->
+                <template v-if="!editProduct">
+                  <div class="col-span-1">
+                    <label
+                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Initial Branch
+                    </label>
+                    <select
+                      v-model="initialInventory.branch_id"
+                      class="input-field"
+                      required>
+                      <option value="">Select Branch</option>
+                      <option value="all">All</option>
+                      <option
+                        v-for="branch in branchStore.branches"
+                        :key="branch.id"
+                        :value="branch.id">
+                        {{ branch.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="col-span-1">
+                    <label
+                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Initial Quantity
+                    </label>
+                    <input
+                      type="number"
+                      v-model="initialInventory.quantity"
+                      class="input-field"
+                      placeholder="Enter quantity"
+                      min="0"
+                      required />
+                  </div>
+                </template>
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Stock Alert Threshold</label
-                  >
-                  <input
-                    type="number"
-                    v-model="productFormData.stock_alert_threshold"
-                    class="input-field"
-                    placeholder="Default is 5" />
-                </div>
-
-                <div class="col-span-1">
-                  <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Variation</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Variation
+                  </label>
                   <select
                     v-model="productFormData.variation_id"
                     class="input-field">
@@ -360,9 +391,9 @@ onMounted(() => {
 
                 <div class="col-span-1">
                   <label
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >Status</label
-                  >
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Status
+                  </label>
                   <select
                     v-model="productFormData.status"
                     class="input-field">

@@ -7,116 +7,148 @@ export const useProductStore = defineStore("product", () => {
   const products = ref([]);
   const lowStock = ref([]);
 
-  const fetchLowStockProducts = async () => {
+  const fetchLowStockProducts = async (branchId = null) => {
     try {
-      const res = await axios.get(baseURL + "/products/low-stock");
+      const url = branchId 
+        ? `${baseURL}/products/low-stock?branch_id=${branchId}`
+        : `${baseURL}/products/low-stock`;
+      
+      const res = await axios.get(url);
       lowStock.value = res.data.data;
     } catch (error) {
       console.error("Error fetching low stock products:", error);
+      throw error;
     }
   };
 
-  const fetchProducts = async () => {
-    console.log("reached api call");
+  const fetchProducts = async (branchId = null) => {
     try {
-      const response = await $fetch(baseURL + "/products");
-      console.log(response);
-
-      products.value = response;
+      const url = branchId 
+        ? `${baseURL}/products?branch_id=${branchId}`
+        : `${baseURL}/products`;
+      
+      const response = await axios.get(url);
+      products.value = response.data.data || response.data;
     } catch (err) {
-      console.error("Unexpected error:", err);
+      console.error("Error fetching products:", err);
+      throw err;
     }
   };
 
   const addProduct = async (productData) => {
+    console.log("cjecking poduct data")
+    console.log(productData)
     try {
-      // 1️⃣ Build a FormData payload
       const formData = new FormData();
+      
+      // Product fields
       formData.append("name", productData.name);
       if (productData.sku) formData.append("sku", productData.sku);
       if (productData.barcode) formData.append("barcode", productData.barcode);
       formData.append("category_id", productData.category_id);
+      formData.append("quantity", productData.quantity);
       formData.append("purchase_price", String(productData.purchase_price));
       formData.append("selling_price", String(productData.selling_price));
-      formData.append("stock_quantity", String(productData.stock_quantity));
-      formData.append(
-        "stock_alert_threshold",
-        String(productData.stock_alert_threshold)
-      );
-      if (productData.variation_id)
-        formData.append("variation_id", productData.variation_id);
+      if (productData.variation_id) formData.append("variation_id", productData.variation_id);
       formData.append("status", productData.status);
-      // only append the file if it's a real File object
+      
+      // Image handling
       if (productData.image_url instanceof File) {
         formData.append("image_url", productData.image_url);
       }
+      
+      // Add branch inventory data if present
+      if (productData.branches && productData.branches.length) {
+        formData.append("branches", JSON.stringify(productData.branches));
+      }
 
-      // 2️⃣ Send it without manually setting Content-Type
-      const response = await $fetch(baseURL + "/products", {
-        method: "POST",
-        body: formData,
+      const response = await axios.post(`${baseURL}/products`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "Accept": "application/json"
+        }
       });
 
-      return response;
+      // Refresh products list after adding
+      await fetchProducts();
+      return response.data;
+
     } catch (err) {
-      console.error("Unexpected error:", err.response);
-      return err.response._data;
+      console.error("Error adding product:", err.response || err);
+      throw err.response?.data || { error: "Failed to add product" };
     }
   };
 
   const updateProduct = async (productId, productData) => {
     try {
-      // 1️⃣ Build a FormData payload
       const formData = new FormData();
-
       formData.append("_method", "PUT");
+      
+      // Product fields
       formData.append("name", productData.name);
       if (productData.sku) formData.append("sku", productData.sku);
       if (productData.barcode) formData.append("barcode", productData.barcode);
       formData.append("category_id", productData.category_id);
       formData.append("purchase_price", String(productData.purchase_price));
       formData.append("selling_price", String(productData.selling_price));
-      formData.append("stock_quantity", String(productData.stock_quantity));
-      formData.append(
-        "stock_alert_threshold",
-        String(productData.stock_alert_threshold)
-      );
-      if (productData.variation_id)
-        formData.append("variation_id", productData.variation_id);
+      if (productData.variation_id) formData.append("variation_id", productData.variation_id);
       formData.append("status", productData.status);
-      // only append the file if it's a File object
+      
+      // Image handling
       if (productData.image_url instanceof File) {
-        console.log("Appending file:", productData.image_url);
-        console.log(productData.image_url);
         formData.append("image_url", productData.image_url);
+      } else if (productData.image_url === null) {
+        // To handle image removal
+        formData.append("remove_image", "true");
       }
 
-      // 2️⃣ Send it as PATCH (Laravel supports multipart PATCH)
-      const url = baseURL + `/products/${productId}`;
-      const response = await axios.post(url, formData, {
+      const response = await axios.post(`${baseURL}/products/${productId}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Accept: "application/json",
-        },
+          "Accept": "application/json"
+        }
       });
 
+      // Refresh products list after update
+      await fetchProducts();
       return response.data;
+
     } catch (err) {
-      console.error("Axios error:", err.response || err);
-      return err.response?.data || { error: "Unknown error" };
+      console.error("Error updating product:", err.response || err);
+      throw err.response?.data || { error: "Failed to update product" };
     }
   };
 
-  const deleteProduct = async (categoryId) => {
+  const deleteProduct = async (productId) => {
     try {
-      const response = await $fetch(baseURL + "/products/" + categoryId, {
-        method: "DELETE",
+      const response = await axios.delete(`${baseURL}/products/${productId}`);
+      
+      // Refresh products list after deletion
+      await fetchProducts();
+      return response.data;
+
+    } catch (err) {
+      console.error("Error deleting product:", err.response || err);
+      throw err.response?.data || { error: "Failed to delete product" };
+    }
+  };
+
+  // New method to update inventory for a product at a branch
+  const updateInventory = async (productId, branchId, inventoryData) => {
+    try {
+      const response = await axios.post(`${baseURL}/products/${productId}/inventory`, {
+        branch_id: branchId,
+        quantity: inventoryData.quantity,
+        stock_alert_threshold: inventoryData.stock_alert_threshold
       });
 
-      return response;
+      // Refresh products list after inventory update
+      await fetchProducts();
+      return response.data;
+
     } catch (err) {
-      console.error("Unexpected error:", err.response);
-      return err.response._data;
+      console.error("Error updating inventory:", err.response || err);
+      throw err.response?.data || { error: "Failed to update inventory" };
     }
   };
 
@@ -127,6 +159,7 @@ export const useProductStore = defineStore("product", () => {
     addProduct,
     updateProduct,
     deleteProduct,
-    fetchLowStockProducts
+    fetchLowStockProducts,
+    updateInventory
   };
 });

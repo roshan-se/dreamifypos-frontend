@@ -85,7 +85,7 @@ const confirmDelete = async (value) => {
           </td>
           <td
             class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">
-            <div class="rounded-full bg-gradient-to-r  px-2 py-1 text-center text-xs font-medium text-white capitalize w-20":class="[
+            <div class="rounded-full bg-gradient-to-r w-max  px-2 py-1 text-center text-xs font-medium text-white capitalize":class="[
               employee.role == 'admin' ? 'from-rose-500 via-red-400 to-red-500' : 'from-blue-500 via-sky-400 to-sky-500',
             ]">{{ employee.role }}</div>
           </td>

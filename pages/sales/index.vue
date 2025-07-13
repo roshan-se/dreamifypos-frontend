@@ -232,7 +232,7 @@ const formatDateForCSV = (isoString) => {
               </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">
-                {{ sale.sale_items.length }}
+                {{ sale.items.length }}
               </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
@@ -244,7 +244,7 @@ const formatDateForCSV = (isoString) => {
               </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                {{ sale.tax }}
+                {{ sale.gst_amount }}
               </td>
               <td
                 class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
