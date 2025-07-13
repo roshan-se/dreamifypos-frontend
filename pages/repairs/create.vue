@@ -12,6 +12,8 @@ const repairStore = useRepairStore();
 const employeeStore = useEmployeeStore();
 const categoryStore = useCategoryStore();
 
+const branchStore = useBranchStore()
+
 const errors = ref("");
 const cart = ref([]);
 const searchQuery = ref("");
@@ -30,6 +32,7 @@ const repairFormData = reactive({
   total_cost: 0,
   assigned_to: null,
   repair_items: [],
+  branch_id: branchStore.activeBranch.id
 });
 
 const currentCategory = ref(null);

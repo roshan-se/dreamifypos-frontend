@@ -14,6 +14,7 @@ const productStore = useProductStore();
 const employeeStore = useEmployeeStore();
 const repairStore = useRepairStore();
 const categoryStore = useCategoryStore();
+const branchStore = useBranchStore()
 
 const errors = ref("");
 const searchQuery = ref("");
@@ -32,6 +33,7 @@ const repairFormData = reactive({
   total_cost: 0,
   assigned_to: null,
   repair_items: [],
+  branch_id: null
 });
 
 // Category navigation states
@@ -182,6 +184,7 @@ async function loadData() {
   repairFormData.payment_status = r.payment_status;
   repairFormData.deposit_amount = r.deposit_amount || 0;
   repairFormData.assigned_to = r.assigned_to;
+  repairFormData.branch_id = r.branch_id;
 
   cart.value = r.items.map((i) => ({
     id: i.product_id,

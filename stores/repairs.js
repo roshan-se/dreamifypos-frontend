@@ -1,28 +1,28 @@
 import { defineStore } from "pinia";
+import axios from "axios";
+import api from "~/lib/api";
 
 export const useRepairStore = defineStore("repair", () => {
   const runtimeConfig = useRuntimeConfig();
   const baseURL = runtimeConfig.public.apiBase;
   const token =
-  typeof window !== "undefined" ? localStorage.getItem("token") : "";
+    typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
   const repairs = ref([]);
 
   const repair = ref(null);
 
-  const fetchRepairs = async () => {
-    console.log("reached api call");
-    try {
-      const response = await $fetch(baseURL + "/repairs", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(response.data);
+  const branchStore = useBranchStore()
 
-      repairs.value = response.data;
-    } catch (err) {
-      console.error("Unexpected error:", err);
+  const fetchRepairs = async () => {
+    try {
+      const response = await api.get(`${baseURL}/repairs`, {
+        params: { branch_id: branchStore.activeBranch.id },
+      });
+      repairs.value = response.data.data
+    } catch (error) {
+      console.error("Error fetching repairs:", error);
+      return [];
     }
   };
 
