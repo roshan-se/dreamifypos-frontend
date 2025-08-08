@@ -146,7 +146,7 @@ const handleSubmit = async () => {
                   <input
                     v-model="employeeFormData.name"
                     required
-                    class="input-field" />
+                    class="input-field" autocomplete="off" />
                 </div>
                 <!-- Pin Code -->
                 <div v-if="!isEditMode">
@@ -154,7 +154,7 @@ const handleSubmit = async () => {
                   <input
                     v-model="employeeFormData.pin_code"
                     required
-                    class="input-field" />
+                    class="input-field" autocomplete="off" />
                 </div>
                 <!-- Role -->
                 <div>

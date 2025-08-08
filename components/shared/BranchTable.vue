@@ -5,6 +5,8 @@ const branchStore = useBranchStore();
 
 onMounted(() => {
   branchStore.fetchBranches();
+  console.log("I reached branches")
+  console.log(branchStore.branches)
 });
 
 const handleEdit = (branch) => {
@@ -24,7 +26,7 @@ const handleEdit = (branch) => {
           <th scope="col" class="px-6 py-3">Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody v-if="branchStore.branches">
         <tr v-for="branch in branchStore.branches" :key="branch.id" class="bg-white border-b hover:bg-gray-50">
           <td class="px-6 py-4 font-mono font-medium text-gray-900">
             {{ branch.store_id }}

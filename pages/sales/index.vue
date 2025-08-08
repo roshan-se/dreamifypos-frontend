@@ -194,7 +194,7 @@ const formatDateForCSV = (isoString) => {
               <th
                 scope="col"
                 class="px-6 py-3">
-                Tax
+                GST
               </th>
               <th
                 scope="col"

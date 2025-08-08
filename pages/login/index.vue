@@ -32,7 +32,7 @@ const handleSubmit = async () => {
 
     if (data.value?.access_token) {
       localStorage.setItem("token", data.value.access_token);
-      router.push("/"); // Redirect after login
+      navigateTo("/"); // Redirect after login
     }
   } catch (err) {
     console.error("Login Error:", err);

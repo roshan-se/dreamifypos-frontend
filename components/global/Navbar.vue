@@ -13,6 +13,7 @@ const runtimeConfig = useRuntimeConfig();
 const baseURL = runtimeConfig.public.apiBase;
 const router = useRouter();
 const branchStore = useBranchStore();
+const employeesStore = useEmployeeStore();
 
 const activeDrop = ref(false);
 const openModal = ref(false);
@@ -40,7 +41,8 @@ const logout = async () => {
       },
     });
     localStorage.removeItem("token");
-    router.push("/login");
+    employeesStore.authUser = null
+    navigateTo("/login");
   } catch (err) {
     console.error("Logout error:", err);
   }

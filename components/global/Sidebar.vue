@@ -40,7 +40,7 @@
             <span class="flex-1 ms-3 whitespace-nowrap"> POS </span>
           </NuxtLink>
         </li>
-        <li>
+        <li  v-if="authUser && ( authUser.role === 'super_admin' || authUser.role === 'admin' ) ">
           <NuxtLink
             href="/shifts"
             class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
@@ -60,7 +60,7 @@
             <span class="flex-1 ms-3 whitespace-nowrap"> Shifts </span>
           </NuxtLink>
         </li>
-        <li>
+        <li v-if="authUser && authUser.role === 'super_admin'">
           <NuxtLink
             href="/shops"
             class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
@@ -80,7 +80,7 @@
             <span class="flex-1 ms-3 whitespace-nowrap"> Shops </span>
           </NuxtLink>
         </li>
-        <li>
+        <li v-if="authUser && ( authUser.role === 'super_admin' || authUser.role === 'admin' ) ">
           <NuxtLink
             href="/sales"
             class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
@@ -100,7 +100,7 @@
             <span class="flex-1 ms-3 whitespace-nowrap"> Sales </span>
           </NuxtLink>
         </li>
-        <li>
+        <li  v-if="authUser && ( authUser.role === 'super_admin' || authUser.role === 'admin' ) ">
           <NuxtLink
             href="/employees"
             class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
@@ -217,3 +217,28 @@
     </div>
   </aside>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+
+const employeeStore = useEmployeeStore()
+// Use storeToRefs to maintain reactivity
+const { authUser } = storeToRefs(employeeStore)
+
+// Watch for changes in authUser (optional, but can be useful)
+watch(authUser, (newVal) => {
+  console.log('Auth user changed:', newVal)
+})
+
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    // no token → go to login
+    router.replace('/login')
+  } else {
+    employeeStore.fetchAuthUser();
+  }
+})
+
+</script>

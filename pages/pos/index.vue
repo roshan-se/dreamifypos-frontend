@@ -36,9 +36,8 @@ const customerStore = useCustomerStore();
 
 const branchStore = useBranchStore();
 
-const token = localStorage.getItem("token");
-// console.log(typeof(branchStore.activeBranch))
-console.log("Checking branch ID", typeof branchStore?.activeBranch.id);
+const token = localStorage.getItem("token") ?  localStorage.getItem("token") : "";
+
 
 // State
 const selectedCategory = ref(null);

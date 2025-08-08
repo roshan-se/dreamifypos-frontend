@@ -79,6 +79,11 @@ const handleSubmit = async () => {
     branchStore.fetchBranches();
   }
 };
+
+onMounted(() => {
+  branchStore.fetchBranches();
+});
+
 </script>
 
 <template>

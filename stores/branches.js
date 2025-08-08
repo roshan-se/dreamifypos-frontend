@@ -15,7 +15,7 @@ export const useBranchStore = defineStore('branch', () => {
     
     try {
       const { data } = await api.get('/branches');
-      branches.value = data.data || data; // Handle both wrapped and direct responses
+      branches.value = data.branches; // Handle both wrapped and direct responses
       // Set initial active branch if none is set
       if (!activeBranch.value && branches.value.length > 0) {
         activeBranch.value = branches.value[0];

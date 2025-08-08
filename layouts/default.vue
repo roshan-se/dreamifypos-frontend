@@ -26,7 +26,7 @@ onMounted(() => {
     router.replace('/login')
   } else {
     // only now render the layout
-    isReady.value = true
+    isReady.value = true;
   }
 })
 </script>
