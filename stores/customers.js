@@ -1,19 +1,14 @@
 import { defineStore } from "pinia";
+import api from "~/lib/api";
 
 export const useCustomerStore = defineStore("customer", () => {
-
-  const runtimeConfig = useRuntimeConfig();
-  const baseURL = runtimeConfig.public.apiBase;
   
   const customers = ref([]);
 
   const fetchCustomers = async () => {
-    console.log("reached api call");
     try {
-      const response = await $fetch(baseURL + "/customers");
-      console.log(response);
-
-      customers.value = response;
+      const response = await api.get("/customers");
+      customers.value = response.data;
     } catch (err) {
       console.error("Unexpected error:", err);
     }
@@ -21,11 +16,7 @@ export const useCustomerStore = defineStore("customer", () => {
 
   const updateCustomer = async (customerId, updatedData) => {
     try {
-      const response = await $fetch(`${baseURL}/customers/${customerId}`, {
-        method: "PATCH", // Use "PUT" if replacing the entire resource
-        body: updatedData,
-      });
-  
+      const response = await api.patch(`/customers/${customerId}`, updatedData);
       return response;
     } catch (err) {
       console.error("Error updating category:", err);
@@ -40,11 +31,7 @@ export const useCustomerStore = defineStore("customer", () => {
 
   const addCustomer = async(customerData) => {
     try {
-      const response = await $fetch(baseURL + "/customers", {
-        method: "POST",
-        body: customerData,
-      });
-
+      const response = await api.post("/customers", customerData);
       return response;
     } catch (err) {
       console.error("Unexpected error:", err.response);
@@ -54,10 +41,7 @@ export const useCustomerStore = defineStore("customer", () => {
 
   const deleteCustomer = async (customerId) => {
     try {
-      const response = await $fetch(baseURL + "/customers/" + customerId, {
-        method: "DELETE",
-      });
-
+      const response = await api.delete("/customers/" + customerId);
       return response;
     } catch (err) {
       console.error("Unexpected error:", err.response);
