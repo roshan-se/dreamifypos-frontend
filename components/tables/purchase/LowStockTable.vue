@@ -52,8 +52,8 @@ const handleCreatePurchase = async () => {
 </script>
 
 <template>
-  <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-6">
-    <h2 class="text-lg font-bold mb-2">Low Stock Products (≤ 5 units)</h2>
+  <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-6 border">
+    <h2 class="text-lg font-bold px-4 py-4">Low Stock Products (≤ 5 units)</h2>
     <table
       class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
       <thead
@@ -124,8 +124,8 @@ const handleCreatePurchase = async () => {
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction @click="handleCreatePurchase">
+          <AlertDialogCancel class="text-white hover:text-white bg-red-400 hover:bg-red-600">Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="handleCreatePurchase" class="bg-sky-600 hover:bg-sky-800">
             Confirm
           </AlertDialogAction>
         </AlertDialogFooter>

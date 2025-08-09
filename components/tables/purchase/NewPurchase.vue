@@ -73,8 +73,8 @@ const createPurchase = async () => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto mt-6 p-6 bg-white dark:bg-gray-900 rounded-lg shadow">
-    <h2 class="text-xl font-bold mb-4">Create New Purchase</h2>
+  <div class="w-full mt-6 px-4 bg-white dark:bg-gray-900 rounded-lg shadow border">
+    <h2 class="text-xl font-bold py-4">Create New Purchase</h2>
 
     <Input v-model="search" placeholder="Search by product name or SKU..." class="mb-4" />
 
@@ -128,8 +128,9 @@ const createPurchase = async () => {
     <div class="mt-6 text-right">
       <Button
         :disabled="selectedProducts.length === 0"
-        @click="createPurchase">
-        Submit Purchase
+        @click="createPurchase"
+        class="bg-sky-600 hover:bg-sky-800 cursor-pointer">
+        Create
       </Button>
     </div>
   </div>

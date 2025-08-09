@@ -11,10 +11,10 @@
         <button
           @click="toggleTab('low-stock')"
           :class="[
-            'inline-block p-4 rounded-t-lg cursor-pointer animate',
+            'inline-block px-6 py-3 rounded-t-lg cursor-pointer animate',
             activeTab == 'low-stock'
-              ? 'text-blue-600 bg-gray-100'
-              : 'hover:text-gray-600 hover:bg-gray-50',
+              ? 'text-sky-600 bg-sky-100'
+              : 'hover:text-gray-600 hover:bg-sky-50',
           ]">
           Low Stock
         </button>
@@ -23,10 +23,10 @@
         <button
           @click="toggleTab('new-purchase')"
           :class="[
-            'inline-block p-4 rounded-t-lg cursor-pointer animate',
+            'inline-block px-6 py-3 rounded-t-lg cursor-pointer animate',
             activeTab == 'new-purchase'
-              ? 'text-blue-600 bg-gray-100'
-              : 'hover:text-gray-600 hover:bg-gray-50',
+              ? 'text-sky-600 bg-sky-100'
+              : 'hover:text-gray-600 hover:bg-sky-50',
           ]">
           New Purchase
         </button>
@@ -35,10 +35,10 @@
         <button
           @click="toggleTab('recent-purchase')"
           :class="[
-            'inline-block p-4 rounded-t-lg cursor-pointer animate',
+            'inline-block px-6 py-3 rounded-t-lg cursor-pointer animate',
             activeTab == 'recent-purchase'
-              ? 'text-blue-600 bg-gray-100'
-              : 'hover:text-gray-600 hover:bg-gray-50',
+              ? 'text-sky-600 bg-sky-100'
+              : 'hover:text-gray-600 hover:bg-sky-50',
           ]">
           Recent Purchase
         </button>
