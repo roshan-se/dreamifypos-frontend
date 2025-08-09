@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, onBeforeUnmount, computed } from "vue";
 import { useBranchStore } from "../stores/branches";
+import Button from "../ui/button/Button.vue";
 
 const branchStore = useBranchStore();
 const config = useRuntimeConfig();
@@ -29,7 +30,7 @@ const productFormData = reactive({
   selling_price: null,
   variation_id: null,
   status: "active",
-  image_url: null
+  image_url: null,
 });
 
 // Branch inventory data for new products
@@ -173,11 +174,11 @@ onMounted(async () => {
 
 <template>
   <div v-if="currentCategory">
-    <button
+    <Button
+      class="bg-emerald-500 hover:bg-emerald-600"
       @click="$emit('close-modal', true)"
-      class="px-8 py-2 rounded-md bg-blue-600 text-white">
-      {{ editProduct ? "Edit Product" : "Add Product" }}
-    </button>
+      >{{ editProduct ? "Edit Product" : "Add Product" }}</Button
+    >
 
     <!-- Main modal -->
     <div
@@ -403,11 +404,9 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                class="primary-btn w-full">
-                {{ editProduct ? "Update" : "Create" }}
-              </button>
+              <Button type="submit" class="bg-sky-600 hover:bg-sky-800 cursor-pointer w-full">
+                {{ editProduct ? "Update" : "Create" }}</Button
+              >
             </form>
           </div>
         </div>
