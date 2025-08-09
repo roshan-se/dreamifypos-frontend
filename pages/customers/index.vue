@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive } from "vue";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import CustomersTable from "~/components/shared/CustomersTable.vue";
+import Button from "~/components/ui/button/Button.vue";
 
 definePageMeta({
   layout: "default",
@@ -20,11 +21,11 @@ definePageMeta({
 const customerStore = useCustomerStore();
 
 // controls modal visibility
-const openModal = ref(false)
+const openModal = ref(false);
 // are we editing, or creating?
-const isEditMode = ref(false)
+const isEditMode = ref(false);
 // which customer to update?
-const currentCustomerId = ref(null)
+const currentCustomerId = ref(null);
 
 const customerFormData = reactive({
   name: "",
@@ -33,57 +34,73 @@ const customerFormData = reactive({
 });
 
 const resetForm = () => {
-  customerFormData.name = ''
-  customerFormData.phone = ''
-  customerFormData.email = ''
-  currentCustomerId.value = null
-  isEditMode.value = false
-  openModal.value = false
-}
+  customerFormData.name = "";
+  customerFormData.phone = "";
+  customerFormData.email = "";
+  currentCustomerId.value = null;
+  isEditMode.value = false;
+  openModal.value = false;
+};
 
 const openCreateDialog = () => {
-  resetForm()
-  openModal.value = true
-}
+  resetForm();
+  openModal.value = true;
+};
 
 const handleEditCustomer = (customer) => {
-  console.log("checking customers", customer)
-  isEditMode.value = true
-  currentCustomerId.value = customer.id
-  customerFormData.name = customer.name
-  customerFormData.phone = customer.phone
-  customerFormData.email = customer.email
-  openModal.value = true
-}
+  console.log("checking customers", customer);
+  isEditMode.value = true;
+  currentCustomerId.value = customer.id;
+  customerFormData.name = customer.name;
+  customerFormData.phone = customer.phone;
+  customerFormData.email = customer.email;
+  openModal.value = true;
+};
 
 const handleSubmit = async () => {
   if (isEditMode.value) {
     // update
-    const res = await customerStore.updateCustomer(currentCustomerId.value, customerFormData)
+    const res = await customerStore.updateCustomer(
+      currentCustomerId.value,
+      customerFormData
+    );
     if (!res.errors) {
-      useToastify('Customer updated!', { type: 'success', position: 'top-right' })
+      useToastify("Customer updated!", {
+        type: "success",
+        position: "top-right",
+      });
     }
   } else {
     // create
-    const res = await customerStore.addCustomer(customerFormData)
+    const res = await customerStore.addCustomer(customerFormData);
     if (!res.errors) {
-      useToastify('Customer added!', { type: 'success', position: 'top-right' })
+      useToastify("Customer added!", {
+        type: "success",
+        position: "top-right",
+      });
     }
   }
-  openModal.value = false
-  customerStore.fetchCustomers()
-}
+  openModal.value = false;
+  customerStore.fetchCustomers();
+};
 </script>
 
 <template>
   <div
     class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
-    <AlertDialog :open="openModal" @open-change="openModal = $event">
+    <AlertDialog
+      :open="openModal"
+      @open-change="openModal = $event">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-xl font-semibold uppercase">Customers</h1>
 
         <AlertDialogTrigger>
-          <button @click="openCreateDialog" class="primary-btn">Add Customer</button>
+          <Button
+            @click="openCreateDialog"
+            class="bg-sky-600 hover:bg-sky-800 cursor-pointer"
+            variant="default"
+            >Add Customer</Button
+          >
         </AlertDialogTrigger>
       </div>
       <form class="flex items-center w-full mb-8">
@@ -114,6 +131,7 @@ const handleSubmit = async () => {
             id="simple-search"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="Search customer..."
+            autocomplete="off"
             required />
         </div>
       </form>
@@ -123,37 +141,53 @@ const handleSubmit = async () => {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {{ isEditMode ? 'Edit Customer' : 'New Customer' }}
+            {{ isEditMode ? "Edit Customer" : "New Customer" }}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <form class="space-y-4 p-4 md:p-5" @submit.prevent="handleSubmit">
-              <div v-if="customerStore.errors" class="text-red-600 italic text-sm">
+            <form
+              class="space-y-4 p-4 md:p-5"
+              autocomplete="off"
+              @submit.prevent="handleSubmit">
+              <div
+                v-if="customerStore.errors"
+                class="text-red-600 italic text-sm">
                 {{ customerStore.errors }}
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <!-- name -->
                 <div class="col-span-2">
                   <label class="block mb-2 text-sm font-medium">Name</label>
-                  <input v-model="customerFormData.name" required class="input-field" />
+                  <input
+                    v-model="customerFormData.name"
+                    required
+                    class="input-field" />
                 </div>
                 <!-- phone -->
                 <div>
                   <label class="block mb-2 text-sm font-medium">Phone</label>
-                  <input v-model="customerFormData.phone" required class="input-field" />
+                  <input
+                    v-model="customerFormData.phone"
+                    required
+                    class="input-field" />
                 </div>
                 <!-- email -->
                 <div>
                   <label class="block mb-2 text-sm font-medium">Email</label>
-                  <input v-model="customerFormData.email" required class="input-field" />
+                  <input
+                    v-model="customerFormData.email"
+                    required
+                    class="input-field" />
                 </div>
               </div>
             </form>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel @click="resetForm">Cancel</AlertDialogCancel>
-          <AlertDialogAction @click="handleSubmit" class="primary-btn">
-            {{ isEditMode ? 'Update' : 'Create' }}
+          <AlertDialogCancel class="bg-red-400 hover:bg-red-600 text-white hover:text-white cursor-pointer" @click="resetForm">Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            @click="handleSubmit"
+            class="bg-sky-600 hover:bg-sky-800 cursor-pointer">
+            {{ isEditMode ? "Update" : "Create" }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
