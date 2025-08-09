@@ -1,7 +1,6 @@
 <script setup>
 import { ref, reactive } from "vue";
 import VariationsTable from "~/components/tables/VariationsTable.vue";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Button from "~/components/ui/button/Button.vue";
 
 const variationStore = useVariationStore();
 
@@ -110,15 +110,15 @@ const handleSubmit = async () => {
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-xl font-semibold uppercase">Variations</h1>
         <AlertDialogTrigger asChild>
-          <button
+          <Button
             @click="openCreateDialog"
-            class="primary-btn">
-            {{ isEditMode ? "Edit Variation" : "Add Variation" }}
-          </button>
+            class="bg-sky-600 hover:bg-sky-800 cursor-pointer"
+            variant="default"
+            >{{ isEditMode ? "Edit Variation" : "Add Variation" }}</Button
+          >
         </AlertDialogTrigger>
       </div>
 
-      <!-- table will emit edit events -->
       <VariationsTable @edit-variation="handleEditVariation" />
 
       <AlertDialogContent>
@@ -166,12 +166,12 @@ const handleSubmit = async () => {
                         ×
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      @click="variationsFormData.items.push('')"
-                      class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                    <Button
+                      variant="secondary"
+                      class="cursor-pointer hover:bg-gray-300"
+                      @click="variationsFormData.items.push('')">
                       + Add Item
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </form>
@@ -179,10 +179,10 @@ const handleSubmit = async () => {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel @click="resetForm">Cancel</AlertDialogCancel>
+          <AlertDialogCancel class="bg-red-400 hover:bg-red-600 text-white hover:text-white cursor-pointer" @click="resetForm">Cancel</AlertDialogCancel>
           <AlertDialogAction
             @click="handleSubmit"
-            class="primary-btn">
+            class="bg-sky-600 hover:bg-sky-800 cursor-pointer">
             {{ isEditMode ? "Update" : "Create" }}
           </AlertDialogAction>
         </AlertDialogFooter>
