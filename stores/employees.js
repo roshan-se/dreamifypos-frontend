@@ -1,23 +1,22 @@
 import { defineStore } from "pinia";
+import api from "~/lib/api";
 
 export const useEmployeeStore = defineStore("employee", () => {
-  const runtimeConfig = useRuntimeConfig();
-  const baseURL = runtimeConfig.public.apiBase;
   const employees = ref([]);
   const authUser = ref(null);
 
   // Fetch authenticated user
   const fetchAuthUser = async () => {
-    const token = localStorage.getItem('token') || "";
+    const token = localStorage.getItem("token") || "";
     try {
-      const response = await $fetch(baseURL + "/user", {
+      const response = await api.get("/user", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
 
-      authUser.value = response;
+      authUser.value = response.data;
       return response;
     } catch (err) {
       console.error("Error fetching authenticated user:", err);
@@ -27,12 +26,9 @@ export const useEmployeeStore = defineStore("employee", () => {
   };
 
   const fetchEmployees = async () => {
-    console.log("reached api call");
     try {
-      const response = await $fetch(baseURL + "/users");
-      console.log(response);
-
-      employees.value = response;
+      const response = await api.get("/users");
+      employees.value = response.data;
     } catch (err) {
       console.error("Unexpected error:", err);
     }
@@ -40,11 +36,7 @@ export const useEmployeeStore = defineStore("employee", () => {
 
   const addEmployee = async (employeeData) => {
     try {
-      const response = await $fetch(baseURL + "/users", {
-        method: "POST",
-        body: employeeData,
-      });
-
+      const response = await api.post("/users", employeeData);
       return response;
     } catch (err) {
       console.error("Unexpected error:", err.response);
@@ -54,10 +46,7 @@ export const useEmployeeStore = defineStore("employee", () => {
 
   const deleteEmployee = async (employeeId) => {
     try {
-      const response = await $fetch(baseURL + "/users/" + employeeId, {
-        method: "DELETE",
-      });
-
+      const response = await api.delete("/users/" + employeeId);
       return response;
     } catch (err) {
       console.error("Unexpected error:", err.response);
@@ -67,11 +56,7 @@ export const useEmployeeStore = defineStore("employee", () => {
 
   const updateEmployee = async (employeeId, updatedData) => {
     try {
-      const response = await $fetch(`${baseURL}/users/${employeeId}`, {
-        method: "PATCH", // Use "PUT" if replacing the entire resource
-        body: updatedData,
-      });
-
+      const response = await api.patch(`/users/${employeeId}`, updatedData);
       return response;
     } catch (err) {
       console.error("Error updating category:", err);
