@@ -12,6 +12,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import Button from "~/components/ui/button/Button.vue";
 
 const employeeStore = useEmployeeStore();
 
@@ -78,34 +79,35 @@ const handleSubmit = async () => {
   }
 
   // 2️⃣ Build a shallow copy of the form data
-  const payload = { ...employeeFormData }
+  const payload = { ...employeeFormData };
 
   if (isEditMode.value) {
     // Remove pin_code, password and confirmation entirely
-    delete payload.pin_code
-    delete payload.password
-    delete payload.password_confirmation
+    delete payload.pin_code;
+    delete payload.password;
+    delete payload.password_confirmation;
   }
 
   // 3️⃣ Call the correct store action
-  let res
+  let res;
   if (isEditMode.value) {
-    res = await employeeStore.updateEmployee(currentEmployeeId.value, payload)
+    res = await employeeStore.updateEmployee(currentEmployeeId.value, payload);
   } else {
-    res = await employeeStore.addEmployee(payload)
+    res = await employeeStore.addEmployee(payload);
   }
 
   // 4️⃣ Handle the response
   if (res.errors) {
-    const msg = Object.values(res.errors)[0][0]
-    useToastify(msg, { type: 'error', position: 'top-right', autoClose: 3000 })
+    const msg = Object.values(res.errors)[0][0];
+    useToastify(msg, { type: "error", position: "top-right", autoClose: 3000 });
   } else {
-    useToastify(
-      isEditMode.value ? "Employee updated!" : "Employee created!",
-      { type: 'success', position: 'top-right', autoClose: 3000 }
-    )
-    openModal.value = false
-    employeeStore.fetchEmployees()
+    useToastify(isEditMode.value ? "Employee updated!" : "Employee created!", {
+      type: "success",
+      position: "top-right",
+      autoClose: 3000,
+    });
+    openModal.value = false;
+    employeeStore.fetchEmployees();
   }
 };
 </script>
@@ -119,11 +121,12 @@ const handleSubmit = async () => {
         <h1 class="text-xl font-semibold uppercase">Employees</h1>
         <!-- Add / Edit trigger -->
         <AlertDialogTrigger asChild>
-          <button
+          <Button
             @click="openCreateDialog"
-            class="primary-btn">
+            class="bg-sky-600 hover:bg-sky-800 cursor-pointer"
+            variant="default">
             Add Employee
-          </button>
+          </Button>
         </AlertDialogTrigger>
       </div>
       <!-- table emits edit requests -->
@@ -146,7 +149,8 @@ const handleSubmit = async () => {
                   <input
                     v-model="employeeFormData.name"
                     required
-                    class="input-field" autocomplete="off" />
+                    class="input-field"
+                    autocomplete="off" />
                 </div>
                 <!-- Pin Code -->
                 <div v-if="!isEditMode">
@@ -154,7 +158,8 @@ const handleSubmit = async () => {
                   <input
                     v-model="employeeFormData.pin_code"
                     required
-                    class="input-field" autocomplete="off" />
+                    class="input-field"
+                    autocomplete="off" />
                 </div>
                 <!-- Role -->
                 <div>
@@ -213,12 +218,14 @@ const handleSubmit = async () => {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel @click="openModal = false"
+          <AlertDialogCancel
+            class="bg-red-400 hover:bg-red-600 text-white hover:text-white cursor-pointer"
+            @click="openModal = false"
             >Cancel</AlertDialogCancel
           >
           <AlertDialogAction
             @click="handleSubmit"
-            class="primary-btn">
+            class="bg-sky-600 hover:bg-sky-800 cursor-pointer">
             {{ isEditMode ? "Update" : "Create" }}
           </AlertDialogAction>
         </AlertDialogFooter>
