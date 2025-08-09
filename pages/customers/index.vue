@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import CustomersTable from "~/components/shared/CustomersTable.vue";
+import CustomersTable from "~/components/tables/CustomersTable.vue";
 import Button from "~/components/ui/button/Button.vue";
 
 definePageMeta({

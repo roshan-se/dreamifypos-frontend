@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import ProductsTable from "./ProductsTable.vue";
+import ProductsTable from "../tables/ProductsTable.vue";
 
 const runtimeConfig = useRuntimeConfig();
   const baseURL = runtimeConfig.public.apiBase;

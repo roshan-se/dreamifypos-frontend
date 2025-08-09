@@ -1,5 +1,5 @@
 <script setup>
-import ProductsTable from "~/components/shared/ProductsTable.vue";
+import ProductsTable from "~/components/tables/ProductsTable.vue";
 
 const openModal = ref(false);
 const categoryStore = useCategoryStore();

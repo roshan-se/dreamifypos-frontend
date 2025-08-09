@@ -61,9 +61,11 @@
 </template>
 
 <script setup>
-import RecentPurchaseTable from "~/components/dashboard/purchase/RecentPurchaseTable.vue";
-import LowStockTable from "~/components/dashboard/purchase/LowStockTable.vue";
-import NewPurchase from "~/components/dashboard/purchase/NewPurchase.vue";
+import LowStockTable from '~/components/tables/purchase/LowStockTable.vue';
+import NewPurchase from '~/components/tables/purchase/NewPurchase.vue';
+import RecentPurchaseTable from '~/components/tables/purchase/RecentPurchaseTable.vue';
+
+
 // State management
 
 const activeTab = ref("low-stock");
@@ -82,9 +84,7 @@ const toggleTab = (tab) => {
 
 onMounted(() => {
   productStore.fetchProducts();
-
   purchaseStore.fetchPurchases();
-
   console.log(purchaseStore.purchases);
 });
 

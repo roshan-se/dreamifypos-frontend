@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive } from "vue";
-import BranchTable from "~/components/shared/BranchTable.vue";
+import BranchTable from "~/components/tables/BranchTable.vue";
 import {
   AlertDialog,
   AlertDialogTrigger,

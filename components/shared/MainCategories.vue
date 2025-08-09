@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import ProductsTable from "./ProductsTable.vue";
+import ProductsTable from "../tables/ProductsTable.vue";
 import CreateProduct from "./CreateProduct.vue";
 
 defineProps({

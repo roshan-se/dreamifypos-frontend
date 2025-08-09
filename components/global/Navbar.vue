@@ -6,8 +6,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuGroup,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useBranchStore } from "../../stores/branches";
+import api from "~/lib/api";
 
 const runtimeConfig = useRuntimeConfig();
 const baseURL = runtimeConfig.public.apiBase;
@@ -34,14 +36,13 @@ const toggleModal = () => {
 const logout = async () => {
   try {
     const token = localStorage.getItem("token");
-    await $fetch(baseURL + "/logout", {
-      method: "POST",
+    await api.post("/logout", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
     localStorage.removeItem("token");
-    employeesStore.authUser = null
+    employeesStore.authUser = null;
     navigateTo("/login");
   } catch (err) {
     console.error("Logout error:", err);

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive } from "vue";
-import EmployeeTable from "~/components/shared/EmployeeTable.vue";
+import EmployeeTable from "~/components/tables/EmployeeTable.vue";
 import {
   AlertDialog,
   AlertDialogTrigger,
